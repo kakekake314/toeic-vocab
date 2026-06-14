@@ -1106,17 +1106,24 @@ function renderHome(){
   $("#t-rev").textContent=tl.reviewCount;
 }
 function renderProgressBlocks(barSel,textSel,secSel){
-  const total=state.words.length, mastered=masteredCount();
-  const pct=total?Math.round(mastered/total*100):0;
-  $(barSel).style.width=pct+"%";
-  $(textSel).textContent=`${mastered} / ${total} 語`;
+  const total=state.words.length, mastered=masteredCount(), learning=learningCount();
+  const pctMastered=total?Math.round(mastered/total*100):0;
+  const pctLearning=total?Math.round(learning/total*100):0;
+  // バーを2色で表示（習得済み＋学習中）
+  const barEl=$(barSel);
+  barEl.style.width=(pctMastered+pctLearning)+"%";
+  barEl.style.background=`linear-gradient(to right, var(--good) ${pctMastered}%, var(--primary) ${pctMastered}%)`;
+  $(textSel).textContent=`習得 ${mastered} ／ 学習中 ${learning} ／ 全 ${total} 語`;
   const secs=sectionCount(); let html="";
   for(let i=0;i<secs;i++){
     const from=i*100, to=Math.min((i+1)*100,total);
     const list=state.words.filter(w=>w.idx>=from&&w.idx<to);
     const m=list.filter(w=>w.level>=4).length;
-    const p=list.length?Math.round(m/list.length*100):0;
-    html+=`<div class="secrow"><div class="sl"><span>セクション ${i+1}（${from+1}〜${to}）</span><span>${m}/${list.length}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;
+    const l=list.filter(w=>w.level>=1&&w.level<4).length;
+    const pM=list.length?Math.round(m/list.length*100):0;
+    const pL=list.length?Math.round(l/list.length*100):0;
+    const barStyle=`background:linear-gradient(to right, var(--good) ${pM}%, var(--primary) ${pM}%, var(--primary) ${pM+pL}%, var(--surface2) ${pM+pL}%)`;
+    html+=`<div class="secrow"><div class="sl"><span>セクション ${i+1}（${from+1}〜${to}）</span><span>習得 ${m}・学習中 ${l}／${list.length}</span></div><div class="bar"><i style="width:${pM+pL}%;${barStyle}"></i></div></div>`;
   }
   $(secSel).innerHTML=html;
 }
@@ -1124,7 +1131,7 @@ function renderBadges(sel){
   const m=masteredCount();
   $(sel).innerHTML=BADGES.map(b=>{
     const on=m>=b.need;
-    return `<div class="badge ${on?"on":""}"><div class="ic">${b.icon}</div><div class="bn">${b.name}</div><div class="bc">${on?"獲得":b.need+"語"}</div></div>`;
+    return `<div class="badge ${on?"on":""}"><div class="ic">${b.icon}</div><div class="bn">${b.name}</div><div class="bc">${on?"✓ 獲得済み":"習得済み "+b.need+"語で獲得"}</div></div>`;
   }).join("");
 }
 $("#start-btn").onclick=()=>startSession();
