@@ -180,17 +180,6 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
       </div>
     </div>
 
-    <div class="card">
-      <div class="proglabel"><span>全体の習得状況</span><span id="ov-text">0 / 0</span></div>
-      <div class="bar"><i id="ov-bar" style="width:0%"></i></div>
-      <div style="height:16px"></div>
-      <div class="proglabel"><span>セクション別（100語ごと）</span></div>
-      <div class="seclist" id="sec-list"></div>
-    </div>
-
-    <div class="section-title">バッジ</div>
-    <div class="card"><div class="badges" id="home-badges"></div></div>
-
     <button class="btn" id="start-btn"><i class="ti ti-player-play-filled"></i> 学習を始める</button>
     <div style="height:8px"></div>
   </section>
@@ -1115,8 +1104,6 @@ function renderHome(){
   const tl=todayLog();
   $("#t-new").textContent=tl.newCount;
   $("#t-rev").textContent=tl.reviewCount;
-  renderProgressBlocks("#ov-bar","#ov-text","#sec-list");
-  renderBadges("#home-badges");
 }
 function renderProgressBlocks(barSel,textSel,secSel){
   const total=state.words.length, mastered=masteredCount();
@@ -1802,6 +1789,7 @@ function renderCalendar(){
 /* ============ Settings ============ */
 function renderSettings(){
   $$("#seg-new button").forEach(b=>b.classList.toggle("on",+b.dataset.n===state.settings.newPerDay));
+  $$("#seg-rev button").forEach(b=>b.classList.toggle("on",+b.dataset.n===(state.settings.reviewCap||0)));
   $("#colors").innerHTML=COLORS.map(c=>`<div class="col ${c.c===state.settings.primary?"on":""}" data-c="${c.c}" data-rgb="${c.rgb}" title="${c.n}" style="background:${c.c}"></div>`).join("");
   $$("#colors .col").forEach(el=>el.onclick=()=>{
     state.settings.primary=el.dataset.c; state.settings.primaryRgb=el.dataset.rgb;
@@ -1812,6 +1800,7 @@ function renderSettings(){
     : "⚠️ このプレビュー環境ではlocalStorageが使えず、記録は保持されません。HTMLファイルとして保存してブラウザで開くと正常に保存されます。";
 }
 $$("#seg-new button").forEach(b=>b.onclick=()=>{state.settings.newPerDay=+b.dataset.n;save();renderSettings();toast("新規単語数を変更しました");});
+$$("#seg-rev button").forEach(b=>b.onclick=()=>{state.settings.reviewCap=+b.dataset.n;save();renderSettings();toast("復習上限を変更しました");});
 $("#export-btn").onclick=()=>{
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);
