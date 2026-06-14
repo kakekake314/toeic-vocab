@@ -1,0 +1,1837 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>TOEIC 単語帳</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.7.0/dist/tabler-icons.min.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#0F0F13; --surface:#1A1A24; --surface2:#22222F;
+  --line:#2c2c3a; --text:#F2F2F7; --muted:#8a8a9a;
+  --primary:#7C3AED; --primary-rgb:124,58,237;
+  --good:#22C55E; --bad:#EF4444;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:#000;height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--text);display:flex;justify-content:center}
+.mono{font-family:'Space Mono',monospace}
+.app{width:100%;max-width:480px;min-height:100vh;background:var(--bg);position:relative;padding-bottom:78px;overflow-x:hidden}
+.view{display:none;padding:20px 16px 8px;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
+.sub{color:var(--muted);font-size:12px;margin-bottom:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.row{display:flex;align-items:center}
+.between{justify-content:space-between}
+.gap{gap:10px}
+
+/* Home stats */
+.streak{display:flex;align-items:center;gap:12px}
+.streak .flame{font-size:34px}
+.streak .num{font-size:34px;font-weight:700;line-height:1}
+.streak .lbl{color:var(--muted);font-size:12px}
+.todaybox{display:flex;gap:10px;margin-top:14px}
+.todaybox .t{flex:1;background:var(--surface2);border-radius:12px;padding:12px;text-align:center}
+.todaybox .t .v{font-size:24px;font-weight:700}
+.todaybox .t .l{font-size:11px;color:var(--muted);margin-top:2px}
+
+.bar{height:9px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--primary);border-radius:99px;transition:width .5s ease}
+.proglabel{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:0 0 8px}
+.seclist{display:flex;flex-direction:column;gap:11px}
+.secrow .sl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px}
+
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.badge{background:var(--surface2);border-radius:14px;padding:12px 6px;text-align:center;border:1px solid transparent;opacity:.38;transition:.3s}
+.badge.on{opacity:1;border-color:rgba(var(--primary-rgb),.5);box-shadow:0 0 0 1px rgba(var(--primary-rgb),.15) inset}
+.badge .ic{font-size:26px;filter:grayscale(1)}
+.badge.on .ic{filter:none}
+.badge .bn{font-size:10px;margin-top:4px;font-weight:700}
+.badge .bc{font-size:9px;color:var(--muted)}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:14px;
+  background:var(--primary);color:#fff;font-family:inherit;font-weight:700;font-size:16px;padding:16px;cursor:pointer;transition:.15s}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:var(--surface2);color:var(--text)}
+.btn.sm{padding:11px;font-size:14px}
+.btn.danger{background:rgba(239,68,68,.15);color:#ff6b6b}
+
+/* Study */
+.sessbar{margin-bottom:16px}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:26px 18px;text-align:center;min-height:150px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.qmean{font-size:26px;font-weight:700}
+.qex{font-size:15px;color:#c8c8d4;line-height:1.7;font-family:'Space Mono',monospace}
+.qex .blank{color:var(--primary);font-weight:700;letter-spacing:1px}
+.hintbox{font-family:'Space Mono',monospace;font-size:20px;letter-spacing:6px;color:var(--primary);min-height:26px}
+.qbtns{display:flex;gap:10px;margin:14px 0}
+.qbtns .btn{font-size:13px;padding:12px}
+.choices{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.choice{font-family:'Space Mono',monospace;font-size:17px;background:var(--surface);border:1.5px solid var(--line);color:var(--text);
+  border-radius:14px;padding:16px;cursor:pointer;text-align:center;font-weight:700;transition:.15s}
+.choice:active{transform:scale(.98)}
+.choice.correct{border-color:var(--good);background:rgba(34,197,94,.13);color:#6ee79e}
+.choice.wrong{border-color:var(--bad);background:rgba(239,68,68,.12);color:#ff8585}
+.choice.dim{opacity:.4}
+.fb{text-align:center;font-weight:700;font-size:20px;margin:14px 0 6px}
+.fb.ok{color:var(--good)} .fb.ng{color:var(--bad)}
+.tips{background:rgba(var(--primary-rgb),.1);border:1px solid rgba(var(--primary-rgb),.3);border-radius:14px;padding:14px;margin-top:8px;font-size:13px;line-height:1.7}
+.tips .th{font-size:11px;color:var(--primary);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.tips .ans{font-family:'Space Mono',monospace;font-weight:700;color:var(--text)}
+
+.result{text-align:center;padding:30px 10px}
+.result .emoji{font-size:64px}
+.result .rate{font-size:48px;font-weight:700;font-family:'Space Mono',monospace;margin:8px 0}
+.result .rl{color:var(--muted);margin-bottom:20px}
+
+.empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:14px;line-height:1.8}
+.empty i{font-size:40px;display:block;margin-bottom:12px;opacity:.5}
+
+/* Words */
+.searchbar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin-bottom:12px}
+.searchbar i{color:var(--muted)}
+.searchbar input{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:15px}
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.tab{white-space:nowrap;font-size:12px;padding:8px 14px;border-radius:99px;background:var(--surface2);color:var(--muted);cursor:pointer;border:none;font-family:inherit;font-weight:500}
+.tab.on{background:var(--primary);color:#fff}
+.wlist{display:flex;flex-direction:column;gap:8px}
+.witem{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.witem .wt{flex:1;min-width:0}
+.witem .we{font-family:'Space Mono',monospace;font-weight:700;font-size:16px}
+.witem .wm{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvbadge{font-size:10px;font-weight:700;padding:4px 8px;border-radius:99px;white-space:nowrap}
+.lv0{background:#33333f;color:#9a9aaa}
+.lv1,.lv2,.lv3{background:rgba(var(--primary-rgb),.18);color:var(--primary)}
+.lv4{background:rgba(34,197,94,.16);color:#5fd98a}
+.wdel{background:none;border:none;color:#555;font-size:18px;cursor:pointer;padding:4px}
+.wdel:active{color:var(--bad)}
+.countnote{text-align:center;color:var(--muted);font-size:11px;margin:14px 0 4px}
+
+/* Calendar */
+.cal-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.cal-h .m{font-weight:700;font-size:16px}
+.cal-nav{background:var(--surface2);border:none;color:var(--text);width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;width:100%;overflow:hidden}
+.cal-dow{text-align:center;font-size:10px;color:var(--muted);padding:2px 0}
+.cal-cell{border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;background:var(--surface2);padding:6px 2px;min-height:40px;overflow:hidden}
+.cal-cell.empty{background:transparent}
+.cal-cell.done{color:#fff;font-weight:700}
+.cal-cell .cc{font-size:9px;opacity:.8}
+.cal-cell.today{outline:2px solid var(--primary)}
+
+/* Settings */
+.setrow{margin-bottom:12px}
+.setrow .sk{font-size:13px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:7px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;background:var(--surface2);border:1px solid transparent;color:var(--muted);font-family:inherit;font-weight:700;border-radius:10px;padding:11px;cursor:pointer;font-size:14px}
+.seg button.on{background:rgba(var(--primary-rgb),.18);border-color:var(--primary);color:var(--text)}
+.colors{display:flex;gap:10px;flex-wrap:wrap}
+.col{width:38px;height:38px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:.15s}
+.col.on{border-color:#fff;transform:scale(1.08)}
+.field{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;outline:none}
+.note{font-size:11px;color:var(--muted);line-height:1.6;margin-top:6px}
+
+/* Tab bar */
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;height:70px;
+  background:rgba(18,18,24,.92);backdrop-filter:blur(14px);border-top:1px solid var(--line);
+  display:flex;z-index:50}
+.tabbar button{flex:1;background:none;border:none;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;font-family:inherit}
+.tabbar button i{font-size:23px}
+.tabbar button span{font-size:10px}
+.tabbar button.on{color:var(--primary)}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:100}
+.modal.show{display:flex}
+.sheet{width:100%;max-width:480px;background:var(--surface);border-radius:22px 22px 0 0;padding:22px 18px calc(22px + env(safe-area-inset-bottom));animation:up .25s ease}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.sheet h3{font-size:18px;margin-bottom:16px}
+.sheet label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px 2px}
+.sheet input{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:13px;color:var(--text);font-family:inherit;font-size:15px;outline:none;margin-bottom:14px}
+.sheet input:focus{border-color:var(--primary)}
+.fab{position:fixed;bottom:84px;left:50%;margin-left:calc(240px - 70px);transform:translateX(0);z-index:40}
+.fab button{width:54px;height:54px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:26px;box-shadow:0 6px 18px rgba(var(--primary-rgb),.45);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--line);color:var(--text);padding:11px 18px;border-radius:99px;font-size:13px;z-index:200;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+.section-title{font-size:13px;font-weight:700;color:var(--muted);margin:4px 2px 10px;text-transform:uppercase;letter-spacing:.5px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <section class="view active" id="v-home">
+    <h1 class="title">TOEIC 単語帳</h1>
+    <div class="sub" id="home-date"></div>
+
+    <div class="card">
+      <div class="streak">
+        <div class="flame">🔥</div>
+        <div><div class="num mono" id="streak-num">0</div><div class="lbl">日連続学習中</div></div>
+      </div>
+      <div class="todaybox">
+        <div class="t"><div class="v mono" id="t-new">0</div><div class="l">今日の新規</div></div>
+        <div class="t"><div class="v mono" id="t-rev">0</div><div class="l">今日の復習</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="proglabel"><span>全体の習得状況</span><span id="ov-text">0 / 0</span></div>
+      <div class="bar"><i id="ov-bar" style="width:0%"></i></div>
+      <div style="height:16px"></div>
+      <div class="proglabel"><span>セクション別（100語ごと）</span></div>
+      <div class="seclist" id="sec-list"></div>
+    </div>
+
+    <div class="section-title">バッジ</div>
+    <div class="card"><div class="badges" id="home-badges"></div></div>
+
+    <button class="btn" id="start-btn"><i class="ti ti-player-play-filled"></i> 学習を始める</button>
+    <div style="height:8px"></div>
+  </section>
+
+  <!-- STUDY -->
+  <section class="view" id="v-study"></section>
+
+  <!-- WORDS -->
+  <section class="view" id="v-words">
+    <h1 class="title">単語管理</h1>
+    <div class="sub" id="words-count"></div>
+    <div class="searchbar"><i class="ti ti-search"></i><input id="search" placeholder="英単語・日本語で検索"></div>
+    <div class="tabs" id="wfilters">
+      <button class="tab on" data-f="all">すべて</button>
+      <button class="tab" data-f="learning">学習中</button>
+      <button class="tab" data-f="mastered">習得済み</button>
+      <button class="tab" data-f="new">未学習</button>
+    </div>
+    <div class="wlist" id="wlist"></div>
+    <div style="height:30px"></div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section class="view" id="v-progress">
+    <h1 class="title">進捗</h1>
+    <div class="sub">学習の積み重ねを確認しましょう</div>
+
+    <div class="card">
+      <div class="proglabel"><span>全体の習得状況</span><span id="p-ov-text">0 / 0</span></div>
+      <div class="bar"><i id="p-ov-bar" style="width:0%"></i></div>
+      <div style="height:16px"></div>
+      <div class="proglabel"><span>セクション別</span></div>
+      <div class="seclist" id="p-sec-list"></div>
+    </div>
+
+    <div class="section-title">バッジコレクション</div>
+    <div class="card"><div class="badges" id="prog-badges"></div></div>
+
+    <div class="section-title">学習カレンダー</div>
+    <div class="card">
+      <div class="cal-h">
+        <button class="cal-nav" id="cal-prev"><i class="ti ti-chevron-left"></i></button>
+        <div class="m mono" id="cal-month"></div>
+        <button class="cal-nav" id="cal-next"><i class="ti ti-chevron-right"></i></button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+    <div style="height:20px"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <h1 class="title">設定</h1>
+    <div class="sub">アプリの動作をカスタマイズ</div>
+
+    <div class="card">
+      <div class="setrow">
+        <div class="sk"><i class="ti ti-plus"></i> 1日の新規単語数</div>
+        <div class="seg" id="seg-new">
+          <button data-n="5">5</button><button data-n="10">10</button>
+          <button data-n="15">15</button><button data-n="20">20</button>
+        </div>
+      </div>
+      <div class="setrow">
+        <div class="sk"><i class="ti ti-refresh"></i> 1日の復習上限</div>
+        <div class="seg" id="seg-rev">
+          <button data-n="0">なし</button><button data-n="20">20</button>
+          <button data-n="30">30</button><button data-n="50">50</button>
+        </div>
+        <div class="note">復習が溜まったとき、1セッションに出題される復習語数を制限します（期日が近い順に優先）。</div>
+      </div>
+      <div class="setrow">
+        <div class="sk"><i class="ti ti-palette"></i> プライマリーカラー</div>
+        <div class="colors" id="colors"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="btn ghost sm" id="export-btn"><i class="ti ti-download"></i> データをエクスポート（JSON）</button>
+      <div style="height:10px"></div>
+      <button class="btn ghost sm" id="import-btn"><i class="ti ti-upload"></i> データをインポート（JSON）</button>
+      <input type="file" id="import-file" accept=".json,application/json" style="display:none">
+      <div style="height:10px"></div>
+      <button class="btn danger sm" id="reset-btn"><i class="ti ti-trash"></i> 学習データをリセット</button>
+      <div class="note" id="storage-note"></div>
+    </div>
+    <div style="height:20px"></div>
+  </section>
+
+  <!-- FAB (words only) -->
+  <div class="fab" id="fab" style="display:none"><button id="add-fab"><i class="ti ti-plus"></i></button></div>
+
+  <!-- Tab bar -->
+  <nav class="tabbar" id="tabbar">
+    <button class="on" data-v="home"><i class="ti ti-home"></i><span>ホーム</span></button>
+    <button data-v="study"><i class="ti ti-school"></i><span>学習</span></button>
+    <button data-v="words"><i class="ti ti-list-search"></i><span>単語</span></button>
+    <button data-v="progress"><i class="ti ti-chart-bar"></i><span>進捗</span></button>
+    <button data-v="settings"><i class="ti ti-settings"></i><span>設定</span></button>
+  </nav>
+</div>
+
+<!-- Add word modal -->
+<div class="modal" id="modal-add">
+  <div class="sheet">
+    <h3>単語を追加</h3>
+    <label>英単語 *</label>
+    <input id="in-word" autocomplete="off" spellcheck="false" placeholder="例：negotiate">
+    <label>日本語訳 *</label>
+    <input id="in-mean" placeholder="例：交渉する">
+    <label>メモ（任意）</label>
+    <input id="in-note" placeholder="例：商談でよく使う">
+    <div class="row gap">
+      <button class="btn ghost sm" id="add-cancel">キャンセル</button>
+      <button class="btn sm" id="add-save">追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ============ Seed data: 金フレ 700語（英単語＋標準訳） ============ */
+const SEED=`provide|提供する
+local|地元の
+purchase|購入する／購入
+opening|空き・開店
+construction|建設
+tour|見学・ツアー
+research|調査・研究
+attend|出席する
+delivery|配達
+recently|最近
+indicate|示す
+employee|従業員
+additional|追加の
+survey|調査・アンケート
+review|見直す・批評
+production|生産
+located|位置する
+detail|詳細
+announce|発表する
+repair|修理する
+increase|増加する・増やす
+include|含む
+currently|現在
+advertising|広告
+charge|請求する・料金
+expect|予期する
+firm|会社・確固たる
+client|顧客
+financial|財務の
+annual|年次の
+payment|支払い
+budget|予算
+application|申込・応用
+contract|契約
+management|経営・管理
+performance|業績・公演
+pleased|喜んで
+confirm|確認する
+award|賞・授与する
+clothing|衣類
+display|展示する・展示
+candidate|候補者
+state|述べる・状態
+exhibit|展示する
+session|会合・期間
+note|注意する・メモ
+process|過程・処理する
+instruction|指示・説明
+membership|会員資格
+agency|代理店
+based|拠点を置く
+facility|施設
+advance|前進・前もっての
+committee|委員会
+successful|成功した
+excellent|優れた
+industry|産業
+fee|料金
+accept|受け入れる
+upcoming|来たる
+latest|最新の
+submit|提出する
+transportation|輸送
+resume|再開する
+executive|役員
+introduce|紹介する・導入する
+previous|以前の
+proposal|提案
+supply|供給する
+enclose|同封する
+policy|方針
+register|登録する
+arrange|手配する
+bill|請求書
+hire|雇う
+approve|承認する
+conduct|実施する
+opportunity|機会
+deadline|締切
+corporate|企業の
+warranty|保証
+necessary|必要な
+reserve|予約する
+resident|住民
+create|創造する
+inform|知らせる
+allow|許可する
+mention|言及する
+appreciate|感謝する
+replacement|交換・後任
+update|更新する
+branch|支店
+paid|有給の・支払済み
+unfortunately|残念ながら
+original|元の・独創的な
+rent|賃借する・賃料
+memo|メモ
+luggage|手荷物
+editor|編集者
+exhibition|展示会
+leading|主要な
+organization|組織
+release|発表する・公開
+limited|限られた
+procedure|手順
+experienced|経験豊富な
+personnel|職員・人事
+author|著者
+benefit|利益・恩恵
+focus|焦点を当てる
+participate|参加する
+cause|引き起こす・原因
+degree|学位・程度
+directly|直接
+host|主催する
+expert|専門家
+impress|感動させる
+mainly|主に
+suggestion|提案
+supplier|供給業者
+document|書類
+remind|思い出させる
+require|必要とする
+representative|担当者・代表
+packaging|包装
+description|説明
+property|不動産・特性
+extension|内線・延長
+inquire|問い合わせる
+merchandise|商品
+highly|非常に
+result|結果
+assistance|支援
+encourage|奨励する
+individual|個人・個々の
+laboratory|研究所
+consider|検討する
+headquarters|本社
+ship|発送する
+commercial|商業の・CM
+device|装置
+intended|意図された・対象の
+brochure|パンフレット
+mail|郵送する
+prefer|好む
+response|返答
+region|地域
+donation|寄付
+quarter|四半期
+agreement|合意・契約
+journal|専門誌・日誌
+distribute|配布する
+potential|潜在的な・可能性
+reschedule|予定を変更する
+renew|更新する
+warehouse|倉庫
+refund|払い戻し
+advice|助言
+immediately|すぐに
+council|評議会
+broadcast|放送する
+responsible|責任がある
+avoid|避ける
+effective|効果的な
+invitation|招待
+reduce|減らす
+vehicle|車両
+efficient|効率的な
+manufacturer|製造業者
+comfortable|快適な
+correct|正しい・訂正する
+downtown|中心街
+method|方法
+entire|全体の
+range|範囲
+setting|設定・環境
+apologize|謝る
+frequent|頻繁な
+promotion|昇進・販売促進
+regarding|〜に関して
+temporary|一時的な
+traditional|伝統的な
+admission|入場・入学
+fit|合う・適した
+reference|推薦状・参照
+status|状況・地位
+fuel|燃料
+nearly|ほぼ
+cafeteria|社員食堂
+determine|決定する
+expense|費用
+overseas|海外の
+satisfied|満足した
+appear|現れる・〜に見える
+develop|開発する
+improve|改善する
+reasonable|手頃な・妥当な
+unable|できない
+delay|遅延・遅らせる
+legal|法的な
+regulation|規制
+expand|拡大する
+launch|発売・開始する
+recommendation|推薦
+direct|指示する・直接の
+profit|利益
+seek|求める
+entry|参加・入場
+claim|主張する・請求
+crew|乗務員・班
+demand|需要・要求する
+figure|数字・人物
+raise|上げる・集める
+attach|添付する
+attract|引きつける
+insurance|保険
+departure|出発
+mayor|市長
+balance|残高・均衡
+estimate|見積もる・見積もり
+district|地区
+former|以前の
+modern|現代の
+tip|チップ・助言
+establish|設立する
+option|選択肢
+retire|退職する
+search|検索・探す
+specific|具体的な
+agricultural|農業の
+historical|歴史的な
+helpful|役立つ
+complaint|苦情
+related|関連した
+simply|単に
+unique|独特の
+concerning|〜に関する
+reputation|評判
+ability|能力
+arrival|到着
+familiar|精通した・なじみの
+ideal|理想的な
+maintain|維持する
+landscaping|造園
+organize|整理・準備する
+significant|重要な
+occasion|機会・行事
+standard|基準・標準の
+background|経歴・背景
+guided|ガイド付きの
+advanced|上級の・先進的な
+alternative|代替の・選択肢
+confident|自信のある
+decade|10年
+initial|最初の
+separate|別々の・分ける
+celebration|祝賀
+concern|懸念・関心
+environment|環境
+operate|運営・操作する
+various|様々な
+brief|簡潔な
+time|時間
+overall|全体的な
+achieve|達成する
+basis|基礎・基準
+complex|複雑な・複合施設
+delighted|喜んで
+obtain|入手する
+honor|光栄・栄誉
+properly|適切に
+suitable|適した
+electronic|電子の
+finalize|最終決定する
+generous|気前の良い
+preparation|準備
+duty|職務・関税
+earn|稼ぐ・得る
+willing|喜んで〜する
+worth|価値がある
+fund|資金
+overnight|一晩の
+particularly|特に
+aspect|側面
+hesitate|ためらう
+involved|関与した
+regularly|定期的に
+scholarship|奨学金
+shortly|まもなく
+automobile|自動車
+deposit|預金・手付金
+contain|含む
+content|中身・満足した
+proof|証拠
+affect|影響する
+recognize|認識する・認める
+represent|代表する・表す
+transfer|移す・転勤
+anniversary|記念日
+automatically|自動的に
+capacity|収容能力・能力
+destination|目的地
+grant|助成金・与える
+publish|出版する
+accompany|同行する
+economic|経済の
+extremely|極めて
+institution|機関
+accurate|正確な
+compete|競争する
+emphasize|強調する
+aware|気づいている
+crowded|混雑した
+praise|称賛する
+valuable|貴重な
+explore|探検・検討する
+found|設立する
+function|機能・行事
+impact|影響
+amazing|驚くべき
+assure|保証する
+cooperation|協力
+popularity|人気
+permit|許可する・許可証
+solve|解決する
+vote|投票する
+crop|作物
+neighborhood|近所
+permanent|永久の・常勤の
+regret|後悔する
+slightly|わずかに
+complicated|複雑な
+factor|要因
+favorable|好意的な・有利な
+guarantee|保証する
+mechanical|機械の
+priority|優先事項
+relatively|比較的
+resource|資源
+shuttle|送迎バス
+divide|分ける
+native|母国の・原産の
+afford|〜する余裕がある
+income|収入
+occur|起こる
+saving|節約・貯金
+findings|調査結果
+locate|位置を突き止める
+postpone|延期する
+preserve|保存する
+prove|証明する
+exact|正確な
+gain|得る・増加
+labor|労働
+regard|見なす・尊重
+closely|密接に・注意深く
+deserve|値する
+identify|特定する
+loyal|忠実な
+promising|有望な
+stress|強調・ストレス
+analyze|分析する
+commission|手数料・委員会
+committed|献身的な
+comparison|比較
+component|部品・構成要素
+enable|可能にする
+enjoyable|楽しい
+existing|既存の
+flyer|チラシ
+proceed|進む
+prevent|防ぐ
+alike|同様に・似ている
+appoint|任命する
+connection|接続・つながり
+eager|熱心な
+ease|容易さ・和らげる
+fairly|かなり・公平に
+absolutely|絶対に
+atmosphere|雰囲気・大気
+calculate|計算する
+contrast|対比・対照
+monitor|監視する
+occasionally|時々
+practical|実用的な
+serious|深刻な・真剣な
+strength|強さ・長所
+equally|等しく
+import|輸入する
+informal|非公式の
+lately|最近
+profession|専門職
+supervisor|監督者・上司
+ensure|確実にする
+submission|提出
+notify|通知する
+definitely|確実に
+eligible|資格のある
+paperwork|書類業務
+complimentary|無料の・称賛の
+revise|改訂する
+track|追跡する・進路
+administrative|管理の
+retail|小売
+inventory|在庫
+extensive|広範囲の
+promotional|販売促進の
+catering|仕出し
+wildlife|野生生物
+assign|割り当てる
+imply|暗示する
+banquet|宴会
+valid|有効な
+affordable|手頃な
+renovate|改装する
+guidelines|指針
+certificate|証明書
+innovative|革新的な
+agenda|議題
+assembly|組み立て・集会
+install|設置する
+orientation|説明会・適応
+renowned|有名な
+appropriate|適切な
+ingredient|材料
+storage|保管
+beverage|飲料
+prior|事前の・優先する
+merger|合併
+inn|宿
+equip|備え付ける
+summary|要約
+lease|賃貸借
+defective|欠陥のある
+quarterly|四半期ごとの
+extended|延長された
+architect|建築家
+grocery|食料品
+sculpture|彫刻
+itinerary|旅程
+directory|名簿・案内板
+expire|期限が切れる
+vendor|販売業者
+colleague|同僚
+patron|常連客・後援者
+relocate|移転する
+tourism|観光
+remodel|改築する
+consumer|消費者
+inspect|検査する
+numerous|多数の
+payroll|給与・従業員名簿
+qualified|資格のある・適任の
+appliance|家電製品
+competitive|競争力のある
+specialize|専門にする
+questionnaire|アンケート
+approximately|およそ
+contribute|貢献・寄付する
+productivity|生産性
+promptly|迅速に・時間通りに
+strategy|戦略
+dedicated|献身的な・専用の
+exceptional|並外れた
+luncheon|昼食会
+exceed|超える
+multiple|複数の
+specify|明記する
+venue|会場
+household|世帯・家庭の
+evaluate|評価する
+negotiate|交渉する
+booking|予約
+circulation|発行部数・循環
+completion|完成
+relevant|関連のある
+through|〜を通して
+via|〜経由で
+workplace|職場
+accommodations|宿泊施設
+flexible|柔軟な
+predict|予測する
+preference|好み
+substantial|かなりの
+accessible|利用しやすい
+coverage|補償範囲・報道
+generate|生み出す
+refreshment|軽食
+reliable|信頼できる
+revenue|収益
+fund-raising|資金集め
+accomplished|熟達した
+acquire|獲得・買収する
+accordingly|それに応じて
+critic|批評家
+highlight|強調する・目玉
+profile|紹介・横顔
+motivate|動機づける
+subscription|定期購読
+encounter|遭遇する
+luxury|贅沢
+prohibit|禁止する
+resolve|解決する
+restore|回復・修復する
+surrounding|周囲の
+alert|警戒した・警報
+anticipated|予想された
+consistently|一貫して
+dairy|乳製品の
+phase|段階
+manuscript|原稿
+overtime|残業
+premises|敷地・建物
+utility|公共料金・有用性
+laundry|洗濯
+enthusiastic|熱心な
+outline|概要・概略を述べる
+packet|小包・束
+retain|保持する
+belongings|所持品
+conservation|保護・保存
+routine|日課・決まった
+urban|都市の
+workforce|労働力
+biography|伝記
+ownership|所有権
+pastry|焼き菓子
+tenant|賃借人・テナント
+workload|仕事量
+sufficient|十分な
+characteristic|特徴・特有の
+combined|結合した
+conclude|結論づける・終える
+associate|関連付ける・同僚
+conflict|対立・矛盾
+investment|投資
+physician|医師
+token|しるし・記念品
+partial|部分的な
+dealership|販売代理店
+garment|衣服
+implement|実施する
+paycheck|給料
+recruit|採用する
+substitute|代わり・代用する
+typically|通常・典型的に
+authorize|権限を与える
+comparable|同等の
+faculty|教職員・能力
+initiative|主導権・新たな取り組み
+postage|郵便料金
+afterwards|その後
+aim|目指す・目的
+generally|一般的に
+occupied|使用中の・忙しい
+solid|固体の・しっかりした
+attempt|試みる
+authority|権限・当局
+domestic|国内の・家庭の
+permission|許可
+presence|存在・出席
+rapidly|急速に
+relief|安心・軽減
+reward|報酬・報いる
+translate|翻訳する
+circumstance|状況
+contrary|反対の
+eventually|最終的に
+expose|さらす・暴露する
+panel|委員団・板
+portion|部分・一人前
+primary|主要な
+remark|発言・述べる
+timely|タイミングの良い
+commonly|一般に
+consult|相談する
+convert|変換する
+obligation|義務
+resign|辞職する
+securely|しっかりと・安全に
+strive|努力する
+timeline|予定表・時系列
+urge|強く促す
+acknowledge|認める・受領を知らせる
+diverse|多様な
+transaction|取引
+lack|欠如・欠く
+essential|不可欠な
+majority|大多数
+observe|観察・遵守する
+possess|所有する
+sharply|急激に・鋭く
+adjustment|調整
+aisle|通路
+capture|捕える・獲得する
+consist|構成される
+desirable|望ましい
+heavily|大いに・激しく
+investigate|調査する
+measurement|測定・寸法
+urgent|緊急の
+checkout|会計・チェックアウト
+dispose|処分する
+modify|修正する
+outlet|直売店・コンセント
+prescription|処方箋
+situated|位置する
+surprisingly|驚くほど
+transform|変える
+undergo|経験する・受ける
+blueprint|設計図
+boost|押し上げる・促進
+considerably|かなり
+eliminate|取り除く
+exclusively|独占的に・もっぱら
+leak|漏れる・漏れ
+preliminary|予備の
+sophisticated|洗練された・高度な
+statistic|統計
+vacant|空いている
+evidence|証拠
+excursion|小旅行
+influence|影響・影響する
+ordinary|普通の
+reject|拒否する
+tailor|仕立てる・仕立て屋
+assume|推測する・引き受ける
+engagement|約束・婚約
+fame|名声
+modest|控えめな・適度な
+patent|特許
+pursue|追求する
+remote|遠隔の・遠い
+reveal|明らかにする
+allowance|手当・許容量
+crucial|極めて重要な
+distinguished|著名な
+disturb|邪魔する
+fluent|流暢な
+fulfill|果たす・満たす
+objective|目標・客観的な
+restrict|制限する
+steadily|着実に
+adequate|十分な・適切な
+assessment|評価
+attribute|〜のせいにする・特性
+beforehand|前もって
+challenging|やりがいのある・困難な
+endeavor|努力・試み
+inspiring|鼓舞する
+remarkable|注目に値する
+measure|測る・対策
+struggle|苦労する・奮闘
+wage|賃金
+adapt|適応する
+ambitious|野心的な
+capable|有能な・〜できる
+consequence|結果・影響
+impose|課す
+latter|後者の
+output|生産高・出力
+proudly|誇らしげに
+stable|安定した
+transition|移行
+consent|同意・同意する
+dependable|信頼できる
+diligent|勤勉な
+illustrate|説明する・図示する
+independently|独立して
+mission|任務・使命
+moderate|適度な・穏健な
+outlook|見通し
+precisely|正確に
+concentrated|集中した・濃縮された
+ample|十分な
+asset|資産
+controversial|物議を醸す
+disappointing|期待外れの
+instrumental|役立つ・重要な
+interruption|中断
+perspective|観点・見通し
+scope|範囲
+speculation|推測・投機
+supplement|補足・補う
+understaffed|人手不足の
+rarely|めったに〜ない
+caution|注意・警告
+legislation|法律・立法
+logical|論理的な`;
+
+/* ============ Storage (localStorage + in-memory fallback) ============ */
+const KEY="toeicVocab_v1";
+let memStore=null, lsOK=true;
+function loadRaw(){
+  try{ const v=localStorage.getItem(KEY); return v; }
+  catch(e){ lsOK=false; return memStore; }
+}
+function saveRaw(v){
+  try{ localStorage.setItem(KEY,v); }
+  catch(e){ lsOK=false; memStore=v; }
+}
+
+const DAY=86400000;
+const INTERVAL={1:1,2:3,3:7,4:14};
+const COLORS=[
+  {n:"紫",c:"#7C3AED",rgb:"124,58,237"},
+  {n:"青",c:"#2563EB",rgb:"37,99,235"},
+  {n:"緑",c:"#059669",rgb:"5,150,105"},
+  {n:"赤",c:"#DC2626",rgb:"220,38,38"},
+  {n:"オレンジ",c:"#EA580C",rgb:"234,88,12"},
+  {n:"ピンク",c:"#DB2777",rgb:"219,39,119"},
+  {n:"水色",c:"#0891B2",rgb:"8,145,178"}
+];
+const BADGES=[
+  {name:"First Step",need:10,icon:"🌱"},
+  {name:"On Fire",need:50,icon:"🔥"},
+  {name:"Rising Star",need:100,icon:"⭐"},
+  {name:"Halfway",need:200,icon:"💪"},
+  {name:"Champion",need:350,icon:"🏆"},
+  {name:"Gold Master",need:700,icon:"👑"}
+];
+
+let state;
+function seedWords(){
+  return SEED.trim().split("\n").map((line,i)=>{
+    const p=line.split("|");
+    return {word:p[0].trim(),meaning:(p[1]||"").trim(),note:"",level:0,nextReview:0,idx:i,example:"",tips:""};
+  });
+}
+function defaultState(){
+  return {words:seedWords(),dailyLog:{},settings:{newPerDay:10,primary:"#7C3AED",primaryRgb:"124,58,237"}};
+}
+function load(){
+  const raw=loadRaw();
+  if(!raw){ state=defaultState(); save(); return; }
+  try{
+    const o=JSON.parse(raw);
+    state=defaultState();
+    if(Array.isArray(o.words)&&o.words.length) state.words=o.words.map((w,i)=>({note:"",example:"",tips:"",idx:i,...w}));
+    if(o.dailyLog) state.dailyLog=o.dailyLog;
+    if(o.settings) state.settings={...state.settings,...o.settings};
+    const cc=COLORS.find(c=>c.c===state.settings.primary);
+    if(cc) state.settings.primaryRgb=cc.rgb;
+  }catch(e){ state=defaultState(); }
+}
+function save(){ saveRaw(JSON.stringify(state)); }
+
+/* ============ Helpers ============ */
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const pad=n=>String(n).padStart(2,"0");
+const dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const esc=s=>String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),1800);}
+
+function masteredCount(){return state.words.filter(w=>w.level>=4).length;}
+function learningCount(){return state.words.filter(w=>w.level>=1&&w.level<4).length;}
+function sectionCount(){return Math.min(7,Math.max(1,Math.ceil(state.words.length/100)));}
+function streakDays(){
+  let s=0,d=new Date();
+  const has=dd=>{const l=state.dailyLog[dateKey(dd)];return l&&l.count>0;};
+  if(!has(d)) d.setDate(d.getDate()-1);
+  while(has(d)){s++;d.setDate(d.getDate()-1);}
+  return s;
+}
+function todayLog(){const k=dateKey(new Date());return state.dailyLog[k]||{count:0,newCount:0,reviewCount:0};}
+
+/* ============ Theme ============ */
+function applyTheme(){
+  document.documentElement.style.setProperty("--primary",state.settings.primary);
+  document.documentElement.style.setProperty("--primary-rgb",state.settings.primaryRgb);
+}
+
+/* ============ Navigation ============ */
+let current="home";
+function go(v){
+  current=v;
+  $$(".view").forEach(el=>el.classList.remove("active"));
+  $("#v-"+v).classList.add("active");
+  $$("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
+  $("#fab").style.display=(v==="words")?"block":"none";
+  window.scrollTo(0,0);
+  if(v==="home") renderHome();
+  if(v==="words") renderWords();
+  if(v==="progress") renderProgress();
+  if(v==="settings") renderSettings();
+  if(v==="study"){ if(session) renderQuestion(); else renderStudyEntry(); }
+}
+$$("#tabbar button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+
+/* ============ Home ============ */
+function renderHome(){
+  const now=new Date();
+  $("#home-date").textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  $("#streak-num").textContent=streakDays();
+  const tl=todayLog();
+  $("#t-new").textContent=tl.newCount;
+  $("#t-rev").textContent=tl.reviewCount;
+  renderProgressBlocks("#ov-bar","#ov-text","#sec-list");
+  renderBadges("#home-badges");
+}
+function renderProgressBlocks(barSel,textSel,secSel){
+  const total=state.words.length, mastered=masteredCount();
+  const pct=total?Math.round(mastered/total*100):0;
+  $(barSel).style.width=pct+"%";
+  $(textSel).textContent=`${mastered} / ${total} 語`;
+  const secs=sectionCount(); let html="";
+  for(let i=0;i<secs;i++){
+    const from=i*100, to=Math.min((i+1)*100,total);
+    const list=state.words.filter(w=>w.idx>=from&&w.idx<to);
+    const m=list.filter(w=>w.level>=4).length;
+    const p=list.length?Math.round(m/list.length*100):0;
+    html+=`<div class="secrow"><div class="sl"><span>セクション ${i+1}（${from+1}〜${to}）</span><span>${m}/${list.length}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;
+  }
+  $(secSel).innerHTML=html;
+}
+function renderBadges(sel){
+  const m=masteredCount();
+  $(sel).innerHTML=BADGES.map(b=>{
+    const on=m>=b.need;
+    return `<div class="badge ${on?"on":""}"><div class="ic">${b.icon}</div><div class="bn">${b.name}</div><div class="bc">${on?"獲得":b.need+"語"}</div></div>`;
+  }).join("");
+}
+$("#start-btn").onclick=()=>startSession();
+
+/* ============ Study session ============ */
+let session=null;
+function buildSession(){
+  const now=Date.now();
+  const tl=todayLog();
+  const quota=Math.max(0,state.settings.newPerDay-tl.newCount);
+  const newWords=state.words.filter(w=>w.nextReview===0).sort((a,b)=>a.idx-b.idx).slice(0,quota);
+  let reviewWords=state.words.filter(w=>w.nextReview>0&&w.nextReview<=now).sort((a,b)=>a.nextReview-b.nextReview);
+  const cap=state.settings.reviewCap||0;
+  if(cap>0) reviewWords=reviewWords.slice(0,cap);
+  const queue=shuffle([
+    ...newWords.map(w=>({w,type:"new"})),
+    ...reviewWords.map(w=>({w,type:"review"}))
+  ]);
+  return queue;
+}
+function startSession(){
+  const q=buildSession();
+  if(q.length===0){ session=null; go("study"); return; }
+  session={queue:q,i:0,correct:0,firstTotal:q.length,answered:false,reqId:0};
+  go("study");
+}
+function renderStudyEntry(){
+  const now=Date.now();
+  const tl=todayLog();
+  const quota=Math.max(0,state.settings.newPerDay-tl.newCount);
+  const newAvail=Math.min(quota,state.words.filter(w=>w.nextReview===0).length);
+  const revRaw=state.words.filter(w=>w.nextReview>0&&w.nextReview<=now).length;
+  const cap=state.settings.reviewCap||0;
+  const revAvail=cap>0?Math.min(cap,revRaw):revRaw;
+  const v=$("#v-study");
+  if(newAvail+revAvail===0){
+    v.innerHTML=`<h1 class="title">学習</h1><div class="empty"><i class="ti ti-circle-check"></i>今日の学習は完了しています！<br>新しい単語の追加や、明日の復習をお待ちください。</div>`;
+    return;
+  }
+  v.innerHTML=`<h1 class="title">学習</h1><div class="sub">今日のセッション</div>
+  <div class="card"><div class="row between" style="margin-bottom:12px"><span>新規単語</span><span class="mono" style="font-weight:700;color:var(--primary)">${newAvail} 語</span></div>
+  <div class="row between"><span>復習単語</span><span class="mono" style="font-weight:700;color:var(--primary)">${revAvail} 語${cap>0&&revRaw>cap?`（全 ${revRaw} 語中）`:""}</span></div></div>
+  <button class="btn" id="study-start"><i class="ti ti-player-play-filled"></i> 開始（全 ${newAvail+revAvail} 問）</button>`;
+  $("#study-start").onclick=()=>startSession();
+}
+
+function escReg(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");}
+function maskedExample(item){
+  const w=item.w;
+  if(w.example){
+    return w.example.replace(new RegExp(escReg(w.word),"gi"),'<span class="blank">?????</span>');
+  }
+  const prompts=["この意味の単語は？ → <span class='blank'>?????</span>",
+                 "正しい単語を選びましょう → <span class='blank'>?????</span>",
+                 "下の意味に合う語は → <span class='blank'>?????</span>"];
+  return prompts[w.idx%prompts.length];
+}
+/* ---- 語源ヒント辞書（主要語） ---- */
+const ETYM={
+"provide":"pro(前もって)+vide(見る)→必要を見越して「提供する」",
+"purchase":"pur(=pro 前へ)+chase(追い求める)→追い求めて手に入れる「購入する」",
+"construction":"con(共に)+struct(建てる)+ion→組み上げること「建設」",
+"research":"re(再び)+search(探す)→繰り返し探る「調査・研究」",
+"attend":"at(=ad 〜へ)+tend(向ける・伸ばす)→心を向ける「出席する」",
+"delivery":"de(分離)+liver(=自由にする)→解き放って届ける「配達」",
+"indicate":"in(〜に)+dic(示す・言う)+ate→指し示す「示す」",
+"employee":"em(中に)+ploy(=折り込む)+ee(される人)→組織に組み込まれた人「従業員」",
+"additional":"ad(加えて)+dit(=与える)→足し加える「追加の」",
+"survey":"sur(上から)+vey(=見る)→上から見渡す「調査」",
+"review":"re(再び)+view(見る)→見直す「批評・見直し」",
+"production":"pro(前へ)+duct(導く)+ion→前に導き出す「生産」",
+"located":"loc(場所)+ate→場所に置く「位置する」",
+"locate":"loc(場所)+ate→場所を突き止める「位置を特定する」",
+"announce":"an(=ad 〜に)+nounce(告げる)→人々に告げる「発表する」",
+"repair":"re(再び)+pair(=整える)→元通りに整える「修理する」",
+"increase":"in(上へ)+crease(=育つ)→ふくらむ「増加する」",
+"include":"in(中に)+clude(閉じる)→中に閉じ込める「含む」",
+"advertising":"ad(〜へ)+vert(向ける)→注意を向けさせる「広告」",
+"expect":"ex(外を)+(s)pect(見る)→外を見て待つ「予期する」",
+"confirm":"con(完全に)+firm(固い)→固める「確認する」",
+"display":"dis(離して)+play(=折る)→広げて見せる「展示」",
+"exhibit":"ex(外に)+hibit(=持つ)→外に持ち出す「展示する」",
+"process":"pro(前へ)+cess(進む)→前進する道筋「過程・処理」",
+"instruction":"in(上に)+struct(積む・建てる)+ion→積み上げて教える「指示」",
+"advance":"ad(〜へ)+vance(=ante 前)→前へ進む「前進」",
+"committee":"com(共に)+mit(送る・委ねる)→任務を委ねられた集まり「委員会」",
+"transportation":"trans(越えて)+port(運ぶ)→運び越す「輸送」",
+"resume":"re(再び)+sume(=取る)→再び取り上げる「再開する」",
+"executive":"ex(外へ)+(se)cut(実行する)+ive→実行する人「役員」",
+"introduce":"intro(中へ)+duce(導く)→中へ導き入れる「紹介・導入」",
+"previous":"pre(前に)+vi(=道)+ous→前の道の「以前の」",
+"proposal":"pro(前へ)+pos(置く)+al→前に差し出す案「提案」",
+"supply":"sup(下から)+ply(=満たす)→下から満たす「供給する」",
+"enclose":"en(中に)+close(閉じる)→中に閉じ込める「同封する」",
+"register":"re(再び)+gister(=記す)→記録する「登録する」",
+"approve":"ap(=ad 〜に)+prove(=良いと認める)→「承認する」",
+"conduct":"con(共に)+duct(導く)→まとめて導く「実施する」",
+"corporate":"corpor(=corpus 体)+ate→一つの体の「企業の」",
+"reserve":"re(後ろに)+serve(取っておく)→取り置く「予約する」",
+"resident":"re(後ろに)+sid(座る)+ent→住み続ける人「住民」",
+"create":"cre(=生む)+ate→生み出す「創造する」",
+"inform":"in(中に)+form(形)→形＝知識を与える「知らせる」",
+"mention":"ment(=心)+ion→心に浮かべて口にする「言及する」",
+"appreciate":"ap(〜に)+preci(価値)+ate→価値を認める「感謝・評価する」",
+"replacement":"re(再び)+place(置く)+ment→置き直し「交換・後任」",
+"update":"up(上へ)+date(日付)→日付を新しく「更新する」",
+"unfortunately":"un(否定)+fortun(運)+ately→運悪く「残念ながら」",
+"original":"origin(起源)+al→起源の「元の・独創的な」",
+"exhibition":"ex(外に)+hibit(持つ)+ion→外に並べる「展示会」",
+"organization":"organ(器官・道具)+ize+ation→まとめ上げたもの「組織」",
+"release":"re(離す)+lease(=緩める)→解き放つ「公開する」",
+"procedure":"pro(前へ)+ced(進む)+ure→進め方「手順」",
+"experienced":"ex(外へ)+peri(試す)+enced→試し尽くした「経験豊富な」",
+"benefit":"bene(良い)+fit(=作る)→良いことをもたらす「利益」",
+"participate":"part(部分)+i+cip(取る)+ate→一部を取り合う「参加する」",
+"degree":"de(下へ)+gree(=段)→段階「程度・学位」",
+"directly":"di(離れて)+rect(まっすぐ)+ly→まっすぐに「直接」",
+"suggestion":"sug(下から)+gest(運ぶ)+ion→下から差し出す案「提案」",
+"supplier":"sup(下から)+ply(満たす)+er→満たす人「供給業者」",
+"document":"doc(教える)+ment→教える物「書類」",
+"remind":"re(再び)+mind(心)→再び心に呼ぶ「思い出させる」",
+"require":"re(再び)+quire(求める)→繰り返し求める「必要とする」",
+"representative":"re(再び)+present(差し出す)+ative→人々を映す者「代表」",
+"description":"de(下に)+scrib(書く)+tion→書き下す「説明」",
+"extension":"ex(外へ)+tens(伸ばす)+ion→外へ伸ばす「延長・内線」",
+"inquire":"in(中を)+quire(求める)→中を探り求める「問い合わせる」",
+"assistance":"as(=ad そばに)+sist(立つ)+ance→そばに立つ「支援」",
+"encourage":"en(与える)+courage(勇気)→勇気を与える「奨励する」",
+"individual":"in(否定)+divid(分ける)+ual→これ以上分けられない「個人」",
+"laboratory":"labor(働く)+atory(場所)→働く場所「研究所」",
+"consider":"con(共に)+sider(=星)→星を見て熟考する「検討する」",
+"headquarters":"head(主たる)+quarters(駐屯地)→指令の中心「本社」",
+"commercial":"com(共に)+merc(商品)+ial→商いの「商業の・CM」",
+"device":"de(離れて)+vice(=分ける・工夫)→工夫された物「装置」",
+"response":"re(返して)+spons(答える)→答え返す「返答」",
+"region":"reg(=治める)+ion→治められた範囲「地域」",
+"donation":"don(=与える)+ation→与えること「寄付」",
+"agreement":"a(〜に)+gree(=喜ばしい)+ment→気持ちが合う「合意」",
+"distribute":"dis(分けて)+tribute(割り当てる)→分け与える「配布する」",
+"potential":"potent(力のある)+ial→力を秘めた「潜在的な」",
+"reschedule":"re(再び)+schedule(予定)→予定を組み直す「予定変更」",
+"renew":"re(再び)+new(新しい)→新しくし直す「更新する」",
+"warehouse":"ware(商品)+house(家)→商品の家「倉庫」",
+"refund":"re(戻す)+fund(=注ぐ・資金)→お金を戻す「払い戻し」",
+"council":"con(共に)+cil(=招集する)→共に呼び集める「評議会」",
+"broadcast":"broad(広く)+cast(投げる)→広くまく「放送する」",
+"responsible":"re(返して)+spons(答える)+ible→答える義務がある「責任がある」",
+"effective":"ef(外へ)+fect(作る)+ive→結果を生み出す「効果的な」",
+"invitation":"in(〜へ)+vit(=招く)+ation→招くこと「招待」",
+"reduce":"re(後ろへ)+duce(導く)→引き戻す「減らす」",
+"efficient":"ef(外へ)+fic(作る)+ient→きちんと作り出す「効率的な」",
+"manufacturer":"manu(手)+fact(作る)+urer→手で作る人「製造業者」",
+"correct":"cor(完全に)+rect(まっすぐ)→まっすぐ直す「正しい・訂正する」",
+"entire":"en(否定)+tire(=触れる)→手つかずの「全体の」",
+"apologize":"apo(離れて)+log(言葉)+ize→弁明する「謝る」",
+"frequent":"frequ(=詰まった)+ent→ぎっしり起こる「頻繁な」",
+"promotion":"pro(前へ)+mot(動かす)+ion→前へ動かす「昇進・販促」",
+"temporary":"tempor(時)+ary→その時だけの「一時的な」",
+"admission":"ad(〜へ)+miss(送る)+ion→中へ入れる「入場・入学」",
+"reference":"re(再び)+fer(運ぶ)+ence→繰り返し持ち出す「参照」",
+"determine":"de(完全に)+termine(=境界)→境界を定める「決定する」",
+"expense":"ex(外へ)+pens(量る・払う)→払い出す「費用」",
+"overseas":"over(越えて)+seas(海)→海を越えた「海外の」",
+"develop":"de(否定)+velop(包む)→包みを開く「開発する」",
+"improve":"im(中へ)+prove(=利益)→利益化する「改善する」",
+"delay":"de(離れて)+lay(=緩める)→引き延ばす「遅延」",
+"regulation":"regul(=規則)+ation→規則づけ「規制」",
+"expand":"ex(外へ)+pand(広げる)→外へ広げる「拡大する」",
+"recommendation":"re(強意)+com(共に)+mend(委ねる)+ation→「推薦」",
+"direct":"di(離れて)+rect(まっすぐ導く)→「指示する・直接の」",
+"departure":"de(離れて)+part(分ける)+ure→離れ去る「出発」",
+"estimate":"estim(=価値を見る)+ate→価値を見積もる「見積もる」",
+"establish":"e(外に)+stabl(=安定)+ish→安定させる「設立する」",
+"option":"opt(選ぶ)+ion→選ぶこと「選択肢」",
+"maintain":"main(=手)+tain(保つ)→手で支え保つ「維持する」",
+"organize":"organ(道具・器官)+ize→器官のように整える「整理・準備する」",
+"significant":"sign(印)+i+fic(作る)+ant→印＝意味を作る「重要な」",
+"celebration":"celebr(=祝う)+ation→祝うこと「祝賀」",
+"concern":"con(共に)+cern(=ふるい分ける)→心を分け持つ「懸念・関心」",
+"environment":"en(周りに)+viron(=回る)+ment→取り巻くもの「環境」",
+"operate":"oper(=opus 仕事)+ate→仕事をする「運営・操作する」",
+"various":"vari(=多様)+ous→多様な「様々な」",
+"achieve":"a(〜へ)+chieve(=頂点)→頂点に到達する「達成する」",
+"obtain":"ob(〜に向かって)+tain(保つ)→手にし保つ「入手する」",
+"preparation":"pre(前もって)+par(整える)+ation→「準備」",
+"deposit":"de(下に)+posit(置く)→預け置く「預金・手付金」",
+"contain":"con(共に)+tain(保つ)→中に保つ「含む」",
+"content":"con(共に)+tent(保つ)→中に収められた「中身・満足した」",
+"affect":"af(〜に)+fect(作る)→働きかける「影響する」",
+"recognize":"re(再び)+cogn(知る)+ize→再び知る「認識する」",
+"represent":"re(再び)+present(差し出す)→改めて示す「代表する・表す」",
+"transfer":"trans(越えて)+fer(運ぶ)→運び移す「移す・転勤」",
+"capacity":"cap(取る・容れる)+acity→容れる力「収容力・能力」",
+"destination":"de(完全に)+stin(=立てる)+ation→定めた地「目的地」",
+"publish":"publ(=公の)+ish→公にする「出版する」",
+"accompany":"ac(〜へ)+com(共に)+pany(=パン仲間)→連れ立つ「同行する」",
+"extremely":"extrem(=最も外)+ely→極限まで「極めて」",
+"institution":"in(中に)+stitut(=立てる)+ion→打ち立てたもの「機関」",
+"accurate":"ac(〜へ)+cur(=注意)+ate→注意を払った「正確な」",
+"compete":"com(共に)+pete(=求める)→共に求め合う「競争する」",
+"emphasize":"em(中に)+phas(=見せる)+ize→際立たせる「強調する」",
+"explore":"ex(外へ)+plore(=探し叫ぶ)→探し回る「探検・検討する」",
+"function":"func(=果たす)+tion→果たす役割「機能」",
+"cooperation":"co(共に)+oper(仕事)+ation→共に働く「協力」",
+"permit":"per(通して)+mit(送る)→通させる「許可する」",
+"permanent":"per(通して)+man(留まる)+ent→ずっと留まる「永久の・常勤の」",
+"complicated":"com(共に)+plic(折る)+ated→折り重なった「複雑な」",
+"mechanical":"mechan(=機械)+ical→機械の「機械の」",
+"priority":"prior(前の)+ity→前に来ること「優先事項」",
+"resource":"re(再び)+source(湧き出る)→再び湧く源「資源」",
+"afford":"af(〜へ)+ford(=前へ進める)→前へ出せる「〜する余裕がある」",
+"income":"in(中へ)+come(来る)→入ってくる物「収入」",
+"occur":"oc(〜に向かって)+cur(走る)→走ってくる「起こる」",
+"preserve":"pre(前もって)+serve(保つ)→保ち続ける「保存する」",
+"prove":"prov(=試す・良いと示す)→「証明する」",
+"regard":"re(再び)+gard(=見守る)→見つめる「見なす・尊重」",
+"identify":"ident(同一)+ify→同一と見なす「特定する」",
+"analyze":"ana(分けて)+lyze(=解く)→解きほぐす「分析する」",
+"commission":"com(共に)+miss(送る)+ion→委ね送る「委員会・手数料」",
+"comparison":"com(共に)+par(等しい)+ison→並べ比べる「比較」",
+"component":"com(共に)+pon(置く)+ent→共に置かれた物「構成要素」",
+"enable":"en(与える)+able(できる)→できるようにする「可能にする」",
+"existing":"ex(外に)+ist(=立つ)+ing→外に立ち現れている「既存の」",
+"proceed":"pro(前へ)+ceed(進む)→前進する「進む」",
+"prevent":"pre(前に)+vent(来る)→先回りする「防ぐ」",
+"appoint":"ap(〜へ)+point(指す)→指名する「任命する」",
+"connection":"con(共に)+nect(結ぶ)+ion→結びつき「接続」",
+"calculate":"calcul(=小石で数える)+ate→「計算する」",
+"contrast":"contra(反対に)+st(立つ)→対立させる「対比」",
+"monitor":"mon(=見張る・警告)+itor→見張る人「監視する」",
+"practical":"pract(=行う)+ical→実地の「実用的な」",
+"import":"im(中に)+port(運ぶ)→中へ運び入れる「輸入する」",
+"profession":"pro(人前で)+fess(=公言する)+ion→公言した職「専門職」",
+"supervisor":"super(上から)+vis(見る)+or→上から見る人「監督者・上司」",
+"ensure":"en(する)+sure(確か)→確かにする「確実にする」",
+"submission":"sub(下に)+miss(送る)+ion→下へ差し出す「提出」",
+"notify":"not(知らせる・印)+ify→知らせる「通知する」",
+"revise":"re(再び)+vise(見る)→見直す「改訂する」",
+"administrative":"ad(〜へ)+minis(=仕える)+trative→管理する「管理の」",
+"retail":"re(再び)+tail(=切る)→小さく切り分けて売る「小売」",
+"extensive":"ex(外へ)+tens(伸ばす)+ive→広く伸びた「広範囲の」",
+"assign":"as(〜へ)+sign(印)→印をつけ割り当てる「割り当てる」",
+"imply":"im(中に)+ply(折る)→内に折り込む「暗示する」",
+"valid":"val(強い・価値)+id→効力がある「有効な」",
+"renovate":"re(再び)+nov(新しい)+ate→新しくする「改装する」",
+"certificate":"cert(確かな)+i+fic(作る)+ate→確実だと示す物「証明書」",
+"innovative":"in(中に)+nov(新しい)+ative→新しさを入れる「革新的な」",
+"install":"in(中に)+stall(=置き場)→据え付ける「設置する」",
+"appropriate":"ap(〜へ)+propri(=自分の)+ate→自分のものに＝ぴったりの「適切な」",
+"prior":"pri(=前)+or→より前の「事前の・優先する」",
+"equip":"e(整える)+quip(=船を装備する)→装備する「備え付ける」",
+"summary":"summ(=要点・合計)+ary→要点「要約」",
+"defective":"de(離れて)+fect(作る)+ive→作りそこね「欠陥のある」",
+"architect":"arch(主たる)+tect(=技師)→棟梁「建築家」",
+"directory":"direct(指し示す)+ory→案内する物「名簿・案内板」",
+"expire":"ex(外へ)+(s)pire(息)→息を吐き切る「期限が切れる」",
+"vendor":"vend(=売る)+or→売る人「販売業者」",
+"colleague":"col(共に)+league(=任じる)→共に任ぜられた者「同僚」",
+"relocate":"re(再び)+locate(位置づける)→置き直す「移転する」",
+"remodel":"re(再び)+model(形作る)→作り直す「改築する」",
+"consumer":"con(完全に)+sum(取る)+er→使い尽くす人「消費者」",
+"inspect":"in(中を)+spect(見る)→中を見る「検査する」",
+"numerous":"numer(数)+ous→数多い「多数の」",
+"qualified":"quali(質)+fied→質を備えた「資格のある」",
+"competitive":"com(共に)+pet(求める)+itive→競い合う「競争力のある」",
+"specialize":"speci(=種類)+al+ize→特定分野に絞る「専門にする」",
+"approximately":"ap(〜へ)+proxim(=最も近い)+ately→ほぼ近く「およそ」",
+"contribute":"con(共に)+tribute(与える)→出し合う「貢献・寄付する」",
+"productivity":"pro(前へ)+duct(導く)+ivity→生み出す力「生産性」",
+"promptly":"prompt(=即座に取り出す)+ly→「迅速に」",
+"dedicated":"de(完全に)+dic(捧げる)+ated→捧げ尽くした「献身的な・専用の」",
+"exceptional":"ex(外に)+cept(取る)+ional→取り出して別格の「並外れた」",
+"exceed":"ex(外へ)+ceed(進む)→限度を越えて進む「超える」",
+"multiple":"multi(多くの)+ple(折る)→幾重にも「複数の」",
+"specify":"speci(=種類)+fy→種類を明示する「明記する」",
+"evaluate":"e(外へ)+valu(価値)+ate→価値を引き出す「評価する」",
+"negotiate":"neg(否定)+oti(=暇)+ate→暇でない＝商談する「交渉する」",
+"completion":"com(完全に)+plet(満たす)+ion→満たし切る「完成」",
+"relevant":"re(再び)+lev(=関係づける)+ant→関わる「関連のある」",
+"predict":"pre(前に)+dict(言う)→前もって言う「予測する」",
+"preference":"pre(前に)+fer(運ぶ)+ence→前に置くこと「好み」",
+"substantial":"sub(下に)+st(立つ)+antial→土台のある「かなりの」",
+"accessible":"ac(〜へ)+cess(進む)+ible→近づける「利用しやすい」",
+"generate":"gener(=生む)+ate→生み出す「生み出す」",
+"revenue":"re(戻って)+venue(来る)→戻ってくる金「収益」",
+"acquire":"ac(〜へ)+quire(求める)→求めて得る「獲得する」",
+"subscription":"sub(下に)+script(書く)+ion→下に署名する「定期購読」",
+"encounter":"en(中で)+counter(=向かい)→出くわす「遭遇する」",
+"prohibit":"pro(前に)+hibit(持つ)→前に立ちふさぐ「禁止する」",
+"resolve":"re(再び)+solve(解く)→解きほぐす「解決する」",
+"restore":"re(再び)+store(=立て直す)→元に戻す「回復・修復する」",
+"surrounding":"sur(周りに)+round(丸い)→取り巻く「周囲の」",
+"anticipated":"anti(前に)+cip(取る)+ated→先に取る「予想された」",
+"overtime":"over(超えて)+time(時間)→定時を超えて「残業」",
+"utility":"util(=役立つ)+ity→役立つこと「公共料金・有用性」",
+"enthusiastic":"en(中に)+thus(=神)+iastic→神がかった「熱心な」",
+"outline":"out(外)+line(線)→外枠の線「概要」",
+"retain":"re(後ろに)+tain(保つ)→保ち続ける「保持する」",
+"conservation":"con(完全に)+serv(保つ)+ation→守り保つ「保護・保存」",
+"urban":"urb(=都市)+an→都市の「都市の」",
+"biography":"bio(生命)+graph(書く)+y→人生を書く「伝記」",
+"sufficient":"suf(下から)+fic(作る)+ient→満たし作る「十分な」",
+"characteristic":"charact(=刻まれた印)+eristic→特有の印「特徴」",
+"conclude":"con(完全に)+clude(閉じる)→締めくくる「結論づける」",
+"associate":"as(〜へ)+soci(=仲間)+ate→仲間にする「関連付ける・同僚」",
+"conflict":"con(共に)+flict(=打つ)→打ち合う「対立」",
+"investment":"in(中に)+vest(=衣服)+ment→資金を着せる「投資」",
+"physician":"physi(=身体)+cian→身体の専門家「医師」",
+"partial":"part(部分)+ial→部分の「部分的な」",
+"implement":"im(中に)+ple(満たす)+ment→満たし行う「実施する」",
+"recruit":"re(再び)+cruit(=増す)→新たに増やす「採用する」",
+"substitute":"sub(代わりに)+stitute(立てる)→代わりに立てる「代用する」",
+"authorize":"author(権威)+ize→権限を与える「許可する」",
+"comparable":"com(共に)+par(等しい)+able→比べられる「同等の」",
+"postage":"post(=郵便)+age→郵送料「郵便料金」",
+"generally":"gener(=全体)+ally→全般に「一般的に」",
+"attempt":"at(〜へ)+tempt(=試す)→試みる「試みる」",
+"authority":"author(権威)+ity→「権限・当局」",
+"domestic":"domest(=家)+ic→家の「国内の・家庭の」",
+"permission":"per(通して)+miss(送る)+ion→通させる「許可」",
+"presence":"pre(前に)+(es)sence(=いる)→前にいること「存在・出席」",
+"relief":"re(再び)+lief(=軽くする)→軽くする「安心・軽減」",
+"translate":"trans(越えて)+late(運ぶ)→移し替える「翻訳する」",
+"circumstance":"circum(周りに)+stance(立つ)→周囲の状況「状況」",
+"contrary":"contra(反対に)+ary→反対の「反対の」",
+"expose":"ex(外へ)+pose(置く)→外にさらす「さらす・暴露する」",
+"portion":"port(=分ける)+ion→分け前「部分・一人前」",
+"primary":"prim(=最初)+ary→第一の「主要な」",
+"consult":"con(共に)+sult(=寄り集まる)→意見を集める「相談する」",
+"convert":"con(完全に)+vert(回す)→向きを変える「変換する」",
+"obligation":"ob(〜に)+lig(=縛る)+ation→縛りつけ「義務」",
+"resign":"re(取り消す)+sign(署名)→辞表を出す「辞職する」",
+"diverse":"di(離れて)+verse(向ける)→別々に向く「多様な」",
+"transaction":"trans(越えて)+act(行う)+ion→やり取り「取引」",
+"essential":"ess(=存在)+ential→なくてはならない「不可欠な」",
+"majority":"major(より大きい)+ity→大きい方「大多数」",
+"observe":"ob(〜に向かって)+serve(見張る・保つ)→じっと見る「観察・遵守する」",
+"possess":"pos(=力)+sess(座る)→押さえ持つ「所有する」",
+"adjustment":"ad(〜へ)+just(正しい)+ment→正しく合わせる「調整」",
+"capture":"capt(取る)+ure→取り押さえる「捕える・獲得する」",
+"consist":"con(共に)+sist(立つ)→共に成り立つ「構成される」",
+"desirable":"desire(望む)+able→望ましい「望ましい」",
+"investigate":"in(中を)+vestig(=足跡をたどる)+ate→追跡調査「調査する」",
+"measurement":"measure(測る)+ment→測ること「測定・寸法」",
+"urgent":"urg(=押し迫る)+ent→差し迫った「緊急の」",
+"dispose":"dis(離して)+pose(置く)→片付ける「処分する」",
+"modify":"mod(=形・尺度)+ify→形を変える「修正する」",
+"prescription":"pre(前に)+script(書く)+ion→前もって書く指示「処方箋」",
+"transform":"trans(越えて)+form(形)→形を変える「変える」",
+"undergo":"under(下を)+go(行く)→くぐり抜ける「経験する・受ける」",
+"blueprint":"blue(青)+print(刷り)→青写真「設計図」",
+"eliminate":"e(外へ)+limin(=敷居)+ate→敷居の外へ出す「取り除く」",
+"exclusively":"ex(外へ)+clus(閉じる)+ively→他を締め出して「独占的に」",
+"preliminary":"pre(前に)+limin(=敷居)+ary→入り口前の「予備の」",
+"sophisticated":"soph(=知恵)+isticated→知恵が入り込んだ「洗練された・高度な」",
+"vacant":"vac(=空ける)+ant→空いた「空いている」",
+"evidence":"e(外に)+vid(見る)+ence→外に見えるもの「証拠」",
+"influence":"in(中へ)+flu(流れる)+ence→流れ込む力「影響」",
+"reject":"re(後ろへ)+ject(投げる)→投げ返す「拒否する」",
+"assume":"as(〜へ)+sume(取る)→引き受ける・思い込む「推測する・引き受ける」",
+"engagement":"en(中に)+gage(=誓い)+ment→誓い合い「約束・婚約」",
+"pursue":"pur(=前へ)+sue(=追う)→追い求める「追求する」",
+"remote":"re(離れて)+mote(=動かす)→遠ざけられた「遠隔の」",
+"reveal":"re(逆に)+veal(=ベール)→ベールを外す「明らかにする」",
+"crucial":"cruc(=十字路)+ial→分かれ道の「極めて重要な」",
+"distinguished":"dis(分けて)+stingu(=刺し分ける)+ished→際立った「著名な」",
+"disturb":"dis(ばらばらに)+turb(=かき乱す)→「邪魔する」",
+"fulfill":"ful(=十分に)+fill(満たす)→満たし切る「果たす・満たす」",
+"objective":"ob(〜に向かって)+ject(投げる)+ive→目の前に投げ出された「目標・客観的な」",
+"restrict":"re(後ろへ)+strict(=締める)→引き締める「制限する」",
+"adequate":"ad(〜へ)+equate(=等しくする)→見合った「十分な・適切な」",
+"assessment":"as(そばに)+sess(座る)+ment→そばで査定する「評価」",
+"attribute":"at(〜へ)+tribute(与える)→〜に帰す「のせいにする・特性」",
+"beforehand":"before(前)+hand(手)→手前に「前もって」",
+"remarkable":"re(強意)+mark(印)+able→印をつけたくなる「注目に値する」",
+"measure":"meas(=測る)+ure→測る「測る・対策」",
+"adapt":"ad(〜へ)+apt(適した)→合わせる「適応する」",
+"ambitious":"amb(周りを)+it(行く)+ious→歩き回って求める「野心的な」",
+"capable":"cap(取る・容れる)+able→受け入れられる「有能な」",
+"consequence":"con(共に)+sequ(続く)+ence→後に続くもの「結果・影響」",
+"impose":"im(上に)+pose(置く)→重荷を載せる「課す」",
+"output":"out(外へ)+put(置く)→産み出すもの「生産高・出力」",
+"transition":"trans(越えて)+it(行く)+ion→移り行く「移行」",
+"consent":"con(共に)+sent(感じる)→気持ちが合う「同意」",
+"dependable":"de(下に)+pend(ぶら下がる)+able→頼れる「信頼できる」",
+"diligent":"di(離れて)+lig(=選ぶ・愛する)+ent→愛情込めて選ぶ「勤勉な」",
+"illustrate":"il(中に)+lustr(=光)+ate→光を当てる「説明する・図示する」",
+"independently":"in(否定)+depend(頼る)+ently→頼らずに「独立して」",
+"mission":"miss(送る)+ion→送り出された任務「任務・使命」",
+"moderate":"mod(尺度)+erate→程よい「適度な・穏健な」",
+"outlook":"out(外を)+look(見る)→見通し「見通し」",
+"precisely":"pre(前に)+cis(=切る)+ely→切り分けて「正確に」",
+"concentrated":"con(共に)+centr(中心)+ated→中心に集めた「集中した」",
+"controversial":"contro(反対に)+vers(向ける)+ial→対立する「物議を醸す」",
+"instrumental":"instru(=積み上げる・道具)+mental→道具となる「役立つ・重要な」",
+"interruption":"inter(間に)+rupt(破る)+ion→間に割り込む「中断」",
+"perspective":"per(通して)+spect(見る)+ive→見通し「観点」",
+"speculation":"specul(=見通す)+ation→見通すこと「推測・投機」",
+"supplement":"sup(下から)+ple(満たす)+ment→満たし加える「補足」",
+"caution":"caut(=用心する)+ion→用心「注意・警告」",
+"legislation":"leg(法)+islat(=定める)+ion→法を定める「法律・立法」",
+"logical":"log(言葉・論理)+ical→筋道立った「論理的な」",
+"contract":"con(共に)+tract(引く)→引き合って結ぶ「契約」",
+"application":"ap(〜へ)+plic(折る)+ation→当てはめる「申込・応用」",
+"performance":"per(完全に)+form(形)+ance→やり遂げる「業績・公演」",
+"candidate":"cand(=白い)+idate→白服の志願者「候補者」",
+"demand":"de(完全に)+mand(=命じる)→強く求める「需要・要求」",
+"attract":"at(〜へ)+tract(引く)→引き寄せる「引きつける」",
+"attach":"at(〜へ)+tach(=留める)→くっつける「添付する」",
+"insurance":"in(中に)+sur(=安全)+ance→安全を確保「保険」",
+"introduce ":"intro(中へ)+duce(導く)→「紹介・導入」"
+};
+
+/* ---- 接頭辞・語根の自動分解エンジン ---- */
+const PRE=[["counter","反対に"],["contra","反対に"],["trans","越えて"],["inter","間に"],["super","上に・超えて"],["fore","予め"],["over","過度に"],["under","下に"],["pre","前に"],["pro","前へ"],["sub","下に"],["dis","離れて・否定"],["con","共に"],["com","共に"],["per","通して・完全に"],["ex","外へ"],["en","中に"],["em","中に"],["im","中に・否定"],["in","中に・否定"],["un","否定"],["re","再び・元へ"],["de","下へ・離れて"],["ad","〜の方へ"],["ab","離れて"],["ob","〜に向かって"],["se","離れて"]];
+const ROOT=[["script","書く"],["scrib","書く"],["struct","建てる"],["spect","見る"],["press","押す"],["graph","書く"],["junct","つなぐ"],["tract","引く"],["duct","導く"],["duce","導く"],["dict","言う"],["ject","投げる"],["fact","作る"],["fect","作る"],["form","形"],["gress","進む"],["miss","送る"],["mit","送る"],["cess","進む"],["ceed","進む"],["cede","進む"],["vert","向ける"],["vers","回す"],["tens","伸ばす"],["tend","伸ばす"],["vent","来る"],["cept","取る"],["clud","閉じる"],["clus","閉じる"],["plet","満たす"],["serv","保つ"],["solv","解く"],["sist","立つ"],["tain","保つ"],["pend","ぶら下がる・払う"],["pens","量る・払う"],["rupt","破る"],["sens","感じる"],["sent","感じる"],["spir","息"],["spec","見る"],["port","運ぶ"],["pos","置く"],["pon","置く"],["fer","運ぶ"],["vis","見る"],["vid","見る"],["ven","来る"],["cap","取る"],["mot","動かす"],["mov","動かす"],["sta","立つ"],["voc","声・呼ぶ"],["log","言葉"]];
+const SUF=new Set(["","ion","sion","tion","ment","ing","ed","er","or","ance","ence","ate","ation","ure","ible","able","al","ial","ity","ive","ous","s","ant","ent","y","ly","ize","ist","ic"]);
+function detectAffix(word){
+  const w=word.toLowerCase();
+  for(const [p,pm] of PRE){
+    if(w.length>=p.length+4 && w.startsWith(p)){
+      const rem=w.slice(p.length);
+      for(const [r,rm] of ROOT){
+        if(rem.startsWith(r)){
+          const tail=rem.slice(r.length);
+          if(SUF.has(tail)) return p+"("+pm+")＋"+r+"("+rm+")";
+        }
+      }
+    }
+  }
+  return null;
+}
+function suffixNote(word){
+  const w=word.toLowerCase();
+  const map=[["tion","語尾 -tion は動作・状態を表す名詞"],["sion","語尾 -sion は名詞をつくる"],["ment","語尾 -ment は結果・手段の名詞"],["ance","語尾 -ance は名詞をつくる"],["ence","語尾 -ence は名詞をつくる"],["able","語尾 -able は「〜できる」"],["ible","語尾 -ible は「〜できる」"],["ize","語尾 -ize は「〜にする」動詞"],["ify","語尾 -ify は「〜化する」動詞"],["ous","語尾 -ous は「〜の多い」形容詞"],["ive","語尾 -ive は「〜的な」形容詞"],["ity","語尾 -ity は性質を表す名詞"],["ical","語尾 -ical は「〜の」形容詞"],["ly","語尾 -ly は副詞をつくる"]];
+  for(const [s,note] of map){ if(w.endsWith(s)&&w.length>s.length+2) return note; }
+  return null;
+}
+const GENERIC=[
+ "{w}：{m}。例文の文脈ごと声に出すと定着しやすいです。",
+ "{w}：{m}。今日のうちにもう一度思い出してみましょう。",
+ "{w}：{m}。似た意味の語と関連づけると忘れにくくなります。",
+ "{w}：{m}。TOEIC頻出。Part5・7で要チェックの一語です。",
+ "{w}：{m}。発音とアクセントもあわせて確認しましょう。",
+ "{w}：{m}。一度書き出すと記憶に残りやすくなります。"
+];
+function localTip(w){
+  const key=w.word.toLowerCase();
+  if(ETYM[key]) return "語源："+ETYM[key];
+  const af=detectAffix(key);
+  if(af) return "語源："+af+"→「"+w.meaning+"」";
+  const sn=suffixNote(key);
+  if(sn) return w.meaning+"。"+sn+"。意味とセットで覚えましょう。";
+  return GENERIC[w.idx%GENERIC.length].replace("{w}",w.word).replace("{m}",w.meaning);
+}
+
+function makeChoices(w){
+  const others=state.words.filter(x=>x.word!==w.word);
+  const sameFirst=shuffle(others.filter(x=>x.word[0].toLowerCase()===w.word[0].toLowerCase()));
+  let pool=sameFirst.slice(0,3);
+  if(pool.length<3){
+    const rest=shuffle(others.filter(x=>!pool.includes(x)));
+    pool=pool.concat(rest.slice(0,3-pool.length));
+  }
+  let choices=pool.map(x=>x.word);
+  const dummy=["manage","submit","approve","arrange","prepare","confirm","release","propose"];
+  while(choices.length<3){const d=dummy[(Math.random()*dummy.length)|0];if(d!==w.word&&!choices.includes(d))choices.push(d);}
+  choices.push(w.word);
+  return shuffle(choices);
+}
+
+function renderQuestion(){
+  const v=$("#v-study");
+  const item=session.queue[session.i];
+  const w=item.w;
+  session.answered=false;
+  session.choices=makeChoices(w);
+  const total=session.queue.length;
+  const progress=Math.round(session.i/total*100);
+  v.innerHTML=`
+    <div class="sessbar">
+      <div class="proglabel"><span>問題 ${session.i+1} / ${total}</span><span>${item.type==="new"?"新規":"復習"}・Lv.${w.level}</span></div>
+      <div class="bar"><i style="width:${progress}%"></i></div>
+    </div>
+    <div class="qcard">
+      <div class="qmean">${esc(w.meaning)}</div>
+      <div class="qex" id="qex">${maskedExample(item)}</div>
+      <div class="hintbox" id="hintbox"></div>
+    </div>
+    <div class="qbtns">
+      <button class="btn ghost sm" id="hint-btn"><i class="ti ti-bulb"></i> ヒント</button>
+      <button class="btn ghost sm" id="show-btn"><i class="ti ti-list-check"></i> 選択肢を見る</button>
+    </div>
+    <div class="choices" id="choices" style="display:none"></div>
+    <div id="feedback"></div>
+  `;
+  $("#hint-btn").onclick=()=>{$("#hintbox").textContent=w.word[0].toUpperCase()+" "+"· ".repeat(Math.max(0,w.word.length-1)).trim();};
+  $("#show-btn").onclick=showChoices;
+}
+function showChoices(){
+  const box=$("#choices");
+  if(box.style.display!=="none") return;
+  box.style.display="flex";
+  box.innerHTML=session.choices.map(c=>`<button class="choice" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+  $$("#choices .choice").forEach(btn=>btn.onclick=()=>answer(btn.dataset.c,btn));
+}
+function answer(choice,btn){
+  if(session.answered) return;
+  session.answered=true;
+  const item=session.queue[session.i];
+  const w=item.w;
+  const correct=choice===w.word;
+  // 初回回答のみレベル・ログを更新（再挑戦は練習扱い）
+  if(!item.retry){
+    const newLevel=correct?Math.min(4,w.level+1):Math.max(0,w.level-1);
+    w.level=newLevel;
+    w.nextReview=Date.now()+(INTERVAL[newLevel]||1)*DAY;
+    const k=dateKey(new Date());
+    const l=state.dailyLog[k]||{count:0,newCount:0,reviewCount:0};
+    l.count++; if(item.type==="new") l.newCount++; else l.reviewCount++;
+    state.dailyLog[k]=l;
+    if(correct) session.correct++;
+    save();
+  }
+  // 不正解はセッション末尾に再キュー（正解するまで繰り返し）
+  if(!correct){
+    session.queue.push({w,type:item.type,retry:true});
+  }
+  // UI
+  $$("#choices .choice").forEach(b=>{
+    b.style.pointerEvents="none";
+    if(b.dataset.c===w.word) b.classList.add("correct");
+    else if(b===btn) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+  // reveal full example
+  const qe=$("#qex");
+  if(w.example) qe.innerHTML=w.example.replace(new RegExp(escReg(w.word),"gi"),`<span style="color:var(--primary);font-weight:700">${esc(w.word)}</span>`);
+  $("#hintbox").textContent="";
+  const tip=localTip(w);
+  const fb=$("#feedback");
+  const okMsg=item.retry?"<i class='ti ti-circle-check'></i> 正解！克服しました":"<i class='ti ti-circle-check'></i> 正解！";
+  const ngMsg="<i class='ti ti-circle-x'></i> 不正解（このセッションの最後にもう一度出題されます）";
+  fb.innerHTML=`
+    <div class="fb ${correct?"ok":"ng"}">${correct?okMsg:ngMsg}</div>
+    <div class="tips">
+      <div class="th"><i class="ti ti-sparkles"></i> 答え：<span class="ans">${esc(w.word)}</span> ＝ ${esc(w.meaning)}</div>
+      ${esc(tip)}
+    </div>
+    <div style="height:14px"></div>
+    <button class="btn" id="next-btn">${session.i+1>=session.queue.length?"結果を見る":"次の問題"} <i class="ti ti-arrow-right"></i></button>
+  `;
+  $("#next-btn").onclick=next;
+}
+function next(){
+  session.i++;
+  if(session.i>=session.queue.length){ showResult(); }
+  else renderQuestion();
+}
+function showResult(){
+  const total=session.firstTotal;
+  const rate=total?Math.round(session.correct/total*100):0;
+  const emoji=rate>=90?"🎉":rate>=70?"👍":"💪";
+  const v=$("#v-study");
+  v.innerHTML=`
+    <div class="result">
+      <div class="emoji">${emoji}</div>
+      <div class="rate mono">${rate}%</div>
+      <div class="rl">${total}問中 ${session.correct}問 正解（初回回答ベース）</div>
+      <button class="btn" id="res-home"><i class="ti ti-home"></i> ホームに戻る</button>
+      <div style="height:10px"></div>
+      <button class="btn ghost" id="res-again"><i class="ti ti-refresh"></i> もう一度学習する</button>
+    </div>`;
+  session=null;
+  $("#res-home").onclick=()=>go("home");
+  $("#res-again").onclick=()=>startSession();
+}
+
+/* ============ Words management ============ */
+let wfilter="all";
+$$("#wfilters .tab").forEach(t=>t.onclick=()=>{
+  $$("#wfilters .tab").forEach(x=>x.classList.remove("on"));
+  t.classList.add("on"); wfilter=t.dataset.f; renderWords();
+});
+$("#search").oninput=()=>renderWords();
+function renderWords(){
+  $("#words-count").textContent=`登録 ${state.words.length} 語 ／ 習得 ${masteredCount()} 語`;
+  const q=$("#search").value.trim().toLowerCase();
+  let list=state.words.filter(w=>{
+    if(wfilter==="learning"&&!(w.level>=1&&w.level<4)) return false;
+    if(wfilter==="mastered"&&w.level<4) return false;
+    if(wfilter==="new"&&w.level!==0) return false;
+    if(q&&!(w.word.toLowerCase().includes(q)||w.meaning.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  const lvName=l=>l>=4?["習得済み","lv4"]:l>=1?["学習中 Lv."+l,"lv"+l]:["未学習","lv0"];
+  if(!list.length){$("#wlist").innerHTML=`<div class="empty"><i class="ti ti-search-off"></i>該当する単語がありません</div>`;return;}
+  $("#wlist").innerHTML=list.slice(0,400).map(w=>{
+    const [ln,lc]=lvName(w.level);
+    return `<div class="witem">
+      <div class="wt"><div class="we">${esc(w.word)}</div><div class="wm">${esc(w.meaning)}${w.note?" ・ "+esc(w.note):""}</div></div>
+      <span class="lvbadge ${lc}">${ln}</span>
+      <button class="wdel" data-w="${esc(w.word)}"><i class="ti ti-x"></i></button>
+    </div>`;
+  }).join("")+(list.length>400?`<div class="countnote">先頭400件を表示中（検索で絞り込めます）</div>`:"");
+  $$("#wlist .wdel").forEach(b=>b.onclick=()=>delWord(b.dataset.w));
+}
+function delWord(word){
+  if(!confirm(`「${word}」を削除しますか？`)) return;
+  state.words=state.words.filter(w=>w.word!==word);
+  state.words.forEach((w,i)=>w.idx=i);
+  save(); renderWords(); toast("削除しました");
+}
+$("#add-fab").onclick=()=>{$("#in-word").value="";$("#in-mean").value="";$("#in-note").value="";$("#modal-add").classList.add("show");$("#in-word").focus();};
+$("#add-cancel").onclick=()=>$("#modal-add").classList.remove("show");
+$("#modal-add").onclick=e=>{if(e.target.id==="modal-add")$("#modal-add").classList.remove("show");};
+$("#add-save").onclick=()=>{
+  const word=$("#in-word").value.trim();
+  const mean=$("#in-mean").value.trim();
+  const note=$("#in-note").value.trim();
+  if(!word||!mean){toast("英単語と日本語訳は必須です");return;}
+  if(state.words.some(w=>w.word.toLowerCase()===word.toLowerCase())){toast("すでに登録済みです");return;}
+  state.words.push({word,meaning:mean,note,level:0,nextReview:0,idx:state.words.length,example:"",tips:""});
+  save(); $("#modal-add").classList.remove("show"); renderWords(); toast("追加しました");
+};
+
+/* ============ Progress ============ */
+let calMonth=new Date();
+function renderProgress(){
+  renderProgressBlocks("#p-ov-bar","#p-ov-text","#p-sec-list");
+  renderBadges("#prog-badges");
+  renderCalendar();
+}
+$("#cal-prev").onclick=()=>{calMonth.setMonth(calMonth.getMonth()-1);renderCalendar();};
+$("#cal-next").onclick=()=>{calMonth.setMonth(calMonth.getMonth()+1);renderCalendar();};
+function renderCalendar(){
+  const y=calMonth.getFullYear(),m=calMonth.getMonth();
+  $("#cal-month").textContent=`${y}.${pad(m+1)}`;
+  const first=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  const todayK=dateKey(new Date());
+  const dows=["日","月","火","水","木","金","土"];
+  let html=dows.map(d=>`<div class="cal-dow">${d}</div>`).join("");
+  for(let i=0;i<first;i++) html+=`<div class="cal-cell empty"></div>`;
+  // max count for shading
+  for(let d=1;d<=days;d++){
+    const key=`${y}-${pad(m+1)}-${pad(d)}`;
+    const log=state.dailyLog[key];
+    const done=log&&log.count>0;
+    const isToday=key===todayK;
+    let style="";
+    if(done){
+      const op=Math.min(1,0.3+log.count/40);
+      style=`background:rgba(var(--primary-rgb),${op.toFixed(2)})`;
+    }
+    html+=`<div class="cal-cell ${done?"done":""} ${isToday?"today":""}" style="${style}">
+      <div>${d}</div>${done?`<div class="cc">${log.count}</div>`:""}</div>`;
+  }
+  $("#cal-grid").innerHTML=html;
+}
+
+/* ============ Settings ============ */
+function renderSettings(){
+  $$("#seg-new button").forEach(b=>b.classList.toggle("on",+b.dataset.n===state.settings.newPerDay));
+  $("#colors").innerHTML=COLORS.map(c=>`<div class="col ${c.c===state.settings.primary?"on":""}" data-c="${c.c}" data-rgb="${c.rgb}" title="${c.n}" style="background:${c.c}"></div>`).join("");
+  $$("#colors .col").forEach(el=>el.onclick=()=>{
+    state.settings.primary=el.dataset.c; state.settings.primaryRgb=el.dataset.rgb;
+    applyTheme(); save(); renderSettings();
+  });
+  $("#storage-note").textContent=lsOK
+    ? "※ データはこのブラウザのlocalStorageに保存されます。キャッシュ削除で消えるため、定期的なエクスポートを推奨します。"
+    : "⚠️ このプレビュー環境ではlocalStorageが使えず、記録は保持されません。HTMLファイルとして保存してブラウザで開くと正常に保存されます。";
+}
+$$("#seg-new button").forEach(b=>b.onclick=()=>{state.settings.newPerDay=+b.dataset.n;save();renderSettings();toast("新規単語数を変更しました");});
+$("#export-btn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download=`toeic-vocab-${dateKey(new Date())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast("エクスポートしました");
+};
+$("#reset-btn").onclick=()=>{
+  if(!confirm("学習記録（習熟度・ログ）をすべてリセットします。単語データは残ります。よろしいですか？")) return;
+  state.words.forEach(w=>{w.level=0;w.nextReview=0;});
+  state.dailyLog={};
+  save(); renderSettings(); toast("学習データをリセットしました");
+};
+
+/* ============ Init ============ */
+load();
+applyTheme();
+renderHome();
+</script>
+</body>
+</html>
