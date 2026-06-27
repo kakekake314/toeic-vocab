@@ -78,11 +78,13 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
 .choice.correct{border-color:var(--good);background:rgba(34,197,94,.13);color:#6ee79e}
 .choice.wrong{border-color:var(--bad);background:rgba(239,68,68,.12);color:#ff8585}
 .choice.dim{opacity:.4}
-.fb{text-align:center;font-weight:700;font-size:20px;margin:14px 0 6px}
+.fb{text-align:center;font-weight:700;font-size:18px;margin:0 0 8px}
 .fb.ok{color:var(--good)} .fb.ng{color:var(--bad)}
-.tips{background:rgba(var(--primary-rgb),.1);border:1px solid rgba(var(--primary-rgb),.3);border-radius:14px;padding:14px;margin-top:8px;font-size:13px;line-height:1.7}
+.tips{background:rgba(var(--primary-rgb),.1);border:1px solid rgba(var(--primary-rgb),.3);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
 .tips .th{font-size:11px;color:var(--primary);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .tips .ans{font-family:'Space Mono',monospace;font-weight:700;color:var(--text)}
+.feedback-panel{position:fixed;bottom:60px;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);padding:14px 20px 10px;z-index:50;display:none}
+.feedback-panel.show{display:block}
 
 .result{text-align:center;padding:30px 10px}
 .result .emoji{font-size:64px}
@@ -1088,6 +1090,7 @@ function go(v){
   $$("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   $("#fab").style.display=(v==="words")?"block":"none";
   window.scrollTo(0,0);
+  if(v!=="study"){ const p=$("#feedback-panel"); if(p) p.className="feedback-panel"; }
   if(v==="home") renderHome();
   if(v==="words") renderWords();
   if(v==="progress") renderProgress();
@@ -1626,8 +1629,18 @@ function renderQuestion(){
       <button class="btn ghost sm" id="show-btn"><i class="ti ti-list-check"></i> 選択肢を見る</button>
     </div>
     <div class="choices" id="choices" style="display:none"></div>
-    <div id="feedback"></div>
+    <div id="feedback-spacer" style="display:none;height:200px"></div>
   `;
+  // fixed feedback panel（既存があれば再利用、なければ作成）
+  let panel=$("#feedback-panel");
+  if(!panel){
+    panel=document.createElement("div");
+    panel.id="feedback-panel";
+    panel.className="feedback-panel";
+    document.body.appendChild(panel);
+  }
+  panel.className="feedback-panel";
+  panel.innerHTML="";
   $("#hint-btn").onclick=()=>{$("#hintbox").textContent=w.word[0].toUpperCase()+" "+"· ".repeat(Math.max(0,w.word.length-1)).trim();};
   $("#show-btn").onclick=showChoices;
 }
@@ -1672,7 +1685,7 @@ function answer(choice,btn){
   if(w.example) qe.innerHTML=w.example.replace(new RegExp(escReg(w.word),"gi"),`<span style="color:var(--primary);font-weight:700">${esc(w.word)}</span>`);
   $("#hintbox").textContent="";
   const tip=localTip(w);
-  const fb=$("#feedback");
+  const fb=$("#feedback-panel");
   const okMsg=item.retry?"<i class='ti ti-circle-check'></i> 正解！克服しました":"<i class='ti ti-circle-check'></i> 正解！";
   const ngMsg="<i class='ti ti-circle-x'></i> 不正解（このセッションの最後にもう一度出題されます）";
   fb.innerHTML=`
@@ -1681,12 +1694,18 @@ function answer(choice,btn){
       <div class="th"><i class="ti ti-sparkles"></i> 答え：<span class="ans">${esc(w.word)}</span> ＝ ${esc(w.meaning)}</div>
       ${esc(tip)}
     </div>
-    <div style="height:14px"></div>
     <button class="btn" id="next-btn">${session.i+1>=session.queue.length?"結果を見る":"次の問題"} <i class="ti ti-arrow-right"></i></button>
   `;
+  fb.className="feedback-panel show";
+  const spacer=$("#feedback-spacer");
+  if(spacer) spacer.style.display="block";
   $("#next-btn").onclick=next;
 }
 function next(){
+  const panel=$("#feedback-panel");
+  if(panel) panel.className="feedback-panel";
+  const spacer=$("#feedback-spacer");
+  if(spacer) spacer.style.display="none";
   session.i++;
   if(session.i>=session.queue.length){ showResult(); }
   else renderQuestion();
