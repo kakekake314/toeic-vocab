@@ -100,7 +100,7 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
 .tips{background:rgba(var(--primary-rgb),.1);border:1px solid rgba(var(--primary-rgb),.3);border-radius:14px;padding:12px;margin-bottom:10px;font-size:13px;line-height:1.7}
 .tips .th{font-size:11px;color:var(--primary);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px}
 .tips .ans{font-family:'Space Mono',monospace;font-weight:700;color:var(--text)}
-.feedback-panel{position:fixed;bottom:60px;left:0;right:0;background:var(--bg);border-top:1px solid var(--line);padding:14px 20px 10px;z-index:50;display:none}
+.feedback-panel{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg);border-top:1px solid var(--line);padding:14px 20px 10px;z-index:50;display:none}
 .feedback-panel.show{display:block}
 
 .result{text-align:center;padding:30px 10px}
@@ -1745,13 +1745,13 @@ function renderQuestion(){
     <div class="choices" id="choices" style="display:none"></div>
     <div id="feedback-spacer" style="display:none;height:200px"></div>
   `;
-  // fixed feedback panel（既存があれば再利用、なければ作成）
+  // fixed feedback panel（既存があれば再利用、なければ作成）― .app内に置く
   let panel=$("#feedback-panel");
   if(!panel){
     panel=document.createElement("div");
     panel.id="feedback-panel";
     panel.className="feedback-panel";
-    document.body.appendChild(panel);
+    $(".app").appendChild(panel);
   }
   panel.className="feedback-panel";
   panel.innerHTML="";
