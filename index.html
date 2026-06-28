@@ -172,10 +172,14 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
     <div class="sub" id="home-date"></div>
 
     <div class="card">
-      <div class="streak">
-        <div class="flame">🔥</div>
-        <div><div class="num mono" id="streak-num">0</div><div class="lbl">日連続学習中</div></div>
+      <div class="streak" id="streak-area">
+        <div class="flame" id="streak-icon">🔥</div>
+        <div>
+          <div class="num mono" id="streak-num">0</div>
+          <div class="lbl" id="streak-lbl">日連続学習中</div>
+        </div>
       </div>
+      <div id="phoenix-bar" style="display:none;margin-top:10px"></div>
       <div class="todaybox">
         <div class="t"><div class="v mono" id="t-new">0</div><div class="l">今日の新規</div></div>
         <div class="t"><div class="v mono" id="t-rev">0</div><div class="l">今日の復習</div></div>
@@ -218,7 +222,16 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
     </div>
 
     <div class="section-title">バッジコレクション</div>
-    <div class="card"><div class="badges" id="prog-badges"></div></div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">習得語数</div>
+      <div class="badges" id="prog-badges"></div>
+    </div>
+
+    <div class="section-title">連続学習バッジ</div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">最大連続記録：<span id="max-streak-label" class="mono">0</span> 日</div>
+      <div class="badges" id="streak-badges"></div>
+    </div>
 
     <div class="section-title">学習カレンダー</div>
     <div class="card">
@@ -1028,6 +1041,16 @@ const BADGES=[
   {name:"Champion",need:350,icon:"🏆"},
   {name:"Gold Master",need:700,icon:"👑"}
 ];
+const STREAK_BADGES=[
+  {name:"3日連続",need:3,icon:"🌿"},
+  {name:"1週間",need:7,icon:"🔥"},
+  {name:"2週間",need:14,icon:"⚡"},
+  {name:"1ヶ月",need:30,icon:"🌙"},
+  {name:"2ヶ月",need:60,icon:"💫"},
+  {name:"100日",need:100,icon:"💎"},
+  {name:"半年",need:180,icon:"🌟"},
+  {name:"1年",need:365,icon:"👑"}
+];
 
 let state;
 function seedWords(){
@@ -1037,7 +1060,7 @@ function seedWords(){
   });
 }
 function defaultState(){
-  return {words:seedWords(),dailyLog:{},settings:{newPerDay:10,primary:"#7C3AED",primaryRgb:"124,58,237"}};
+  return {words:seedWords(),dailyLog:{},settings:{newPerDay:10,primary:"#7C3AED",primaryRgb:"124,58,237"},phoenixStreak:0};
 }
 function load(){
   const raw=loadRaw();
@@ -1048,6 +1071,7 @@ function load(){
     if(Array.isArray(o.words)&&o.words.length) state.words=o.words.map((w,i)=>({note:"",example:"",tips:"",idx:i,...w}));
     if(o.dailyLog) state.dailyLog=o.dailyLog;
     if(o.settings) state.settings={...state.settings,...o.settings};
+    if(typeof o.phoenixStreak==="number") state.phoenixStreak=o.phoenixStreak;
     const cc=COLORS.find(c=>c.c===state.settings.primary);
     if(cc) state.settings.primaryRgb=cc.rgb;
   }catch(e){ state=defaultState(); }
@@ -1070,6 +1094,46 @@ function streakDays(){
   let s=0,d=new Date();
   const has=dd=>{const l=state.dailyLog[dateKey(dd)];return l&&l.count>0;};
   if(!has(d)) d.setDate(d.getDate()-1);
+  while(has(d)){s++;d.setDate(d.getDate()-1);}
+  return s;
+}
+/* 最大連続記録（全dailyLogから計算） */
+function maxStreakDays(){
+  const keys=Object.keys(state.dailyLog).filter(k=>state.dailyLog[k].count>0).sort();
+  if(!keys.length) return 0;
+  let max=1,cur=1;
+  for(let i=1;i<keys.length;i++){
+    const prev=new Date(keys[i-1]),curr=new Date(keys[i]);
+    const diff=(curr-prev)/DAY;
+    if(diff===1){cur++;if(cur>max)max=cur;}
+    else cur=1;
+  }
+  return max;
+}
+/* フェニックス状態を更新（学習完了後に呼ぶ） */
+function updatePhoenix(){
+  const s=streakDays();
+  if(s>0){
+    // 連続中ならphoenixをリセット
+    state.phoenixStreak=0;
+  } else {
+    // 昨日学習したか確認
+    const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yKey=dateKey(yesterday);
+    const dayBefore=new Date(); dayBefore.setDate(dayBefore.getDate()-2);
+    const dbKey=dateKey(dayBefore);
+    const hadStreak=state.dailyLog[yKey]&&state.dailyLog[yKey].count>0&&
+                    state.dailyLog[dbKey]&&state.dailyLog[dbKey].count>0;
+    // 途切れた直後のみphoenixを起動（既にphoenix中でなければ）
+    if(state.phoenixStreak===0 && hadStreak) state.phoenixStreak=1;
+  }
+}
+/* フェニックス期間中の連続日数（今日含む） */
+function phoenixDays(){
+  if(state.phoenixStreak<=0) return 0;
+  let s=0,d=new Date();
+  const has=dd=>{const l=state.dailyLog[dateKey(dd)];return l&&l.count>0;};
+  // 今日から連続で何日続いているか
   while(has(d)){s++;d.setDate(d.getDate()-1);}
   return s;
 }
@@ -1103,7 +1167,32 @@ $$("#tabbar button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 function renderHome(){
   const now=new Date();
   $("#home-date").textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
-  $("#streak-num").textContent=streakDays();
+  const s=streakDays();
+  const pb=$("#phoenix-bar");
+  if(s>0){
+    // 通常の連続中
+    $("#streak-icon").textContent="🔥";
+    $("#streak-num").textContent=s;
+    $("#streak-lbl").textContent="日連続学習中";
+    pb.style.display="none";
+    state.phoenixStreak=0;
+  } else if(state.phoenixStreak>0){
+    // フェニックス期間中
+    const pDays=phoenixDays();
+    const PHOENIX_NEED=3;
+    $("#streak-icon").textContent="🪶";
+    $("#streak-num").textContent=pDays;
+    $("#streak-lbl").textContent=`日 — 復活まであと${Math.max(0,PHOENIX_NEED-pDays)}日！`;
+    pb.style.display="block";
+    const pct=Math.min(100,Math.round(pDays/PHOENIX_NEED*100));
+    pb.innerHTML=`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px"><span>🪶 フェニックス復活チャレンジ</span><span>${pDays}/${PHOENIX_NEED}日</span></div><div class="bar"><i style="width:${pct}%;background:linear-gradient(90deg,#a78bfa,#7c3aed)"></i></div>`;
+  } else {
+    // 0日・phoenix未起動
+    $("#streak-icon").textContent="🔥";
+    $("#streak-num").textContent=0;
+    $("#streak-lbl").textContent="日連続学習中";
+    pb.style.display="none";
+  }
   const tl=todayLog();
   $("#t-new").textContent=tl.newCount;
   $("#t-rev").textContent=tl.reviewCount;
@@ -1135,6 +1224,14 @@ function renderBadges(sel){
   $(sel).innerHTML=BADGES.map(b=>{
     const on=m>=b.need;
     return `<div class="badge ${on?"on":""}"><div class="ic">${b.icon}</div><div class="bn">${b.name}</div><div class="bc">${on?"✓ 獲得済み":"習得済み "+b.need+"語で獲得"}</div></div>`;
+  }).join("");
+}
+function renderStreakBadges(){
+  const ms=maxStreakDays();
+  $("#max-streak-label").textContent=ms;
+  $("#streak-badges").innerHTML=STREAK_BADGES.map(b=>{
+    const on=ms>=b.need;
+    return `<div class="badge ${on?"on":""}"><div class="ic">${b.icon}</div><div class="bn">${b.name}</div><div class="bc">${on?"✓ 獲得済み":b.need+"日連続で獲得"}</div></div>`;
   }).join("");
 }
 $("#start-btn").onclick=()=>startSession();
@@ -1667,6 +1764,7 @@ function answer(choice,btn){
     l.count++; if(item.type==="new") l.newCount++; else l.reviewCount++;
     state.dailyLog[k]=l;
     if(correct) session.correct++;
+    updatePhoenix();
     save();
   }
   // 不正解はセッション末尾に再キュー（正解するまで繰り返し）
@@ -1782,6 +1880,7 @@ let calMonth=new Date();
 function renderProgress(){
   renderProgressBlocks("#p-ov-bar","#p-ov-text","#p-sec-list");
   renderBadges("#prog-badges");
+  renderStreakBadges();
   renderCalendar();
 }
 $("#cal-prev").onclick=()=>{calMonth.setMonth(calMonth.getMonth()-1);renderCalendar();};
@@ -1840,6 +1939,7 @@ $("#reset-btn").onclick=()=>{
   if(!confirm("学習記録（習熟度・ログ）をすべてリセットします。単語データは残ります。よろしいですか？")) return;
   state.words.forEach(w=>{w.level=0;w.nextReview=0;});
   state.dailyLog={};
+  state.phoenixStreak=0;
   save(); renderSettings(); toast("学習データをリセットしました");
 };
 
