@@ -142,6 +142,14 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
 .cal-cell.done{color:#fff;font-weight:700}
 .cal-cell .cc{font-size:9px;opacity:.8}
 .cal-cell.today{outline:2px solid var(--primary)}
+.cal-cell.eligible{outline:1.5px dashed var(--muted);cursor:pointer}
+.cal-cell.eligible:active{outline-color:var(--primary)}
+.cal-cell .mk{font-size:10px;line-height:1;margin-top:1px}
+.makeup-card{background:var(--surface);border:1px solid rgba(var(--primary-rgb),.4);border-radius:16px;padding:14px 16px;margin-top:10px}
+.makeup-card .mh{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.makeup-list{display:flex;flex-direction:column;gap:8px}
+.makeup-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:10px;padding:9px 12px;font-size:13px}
+.makeup-row button{border:none;background:var(--primary);color:#fff;font-family:inherit;font-weight:700;font-size:12px;border-radius:99px;padding:7px 14px;cursor:pointer}
 
 /* Settings */
 .setrow{margin-bottom:12px}
@@ -196,7 +204,6 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
           <div class="lbl" id="streak-lbl">日連続学習中</div>
         </div>
       </div>
-      <div id="phoenix-bar" style="display:none;margin-top:10px"></div>
       <div class="todaybox">
         <div class="t"><div class="v mono" id="t-new">0</div><div class="l">今日の新規</div></div>
         <div class="t"><div class="v mono" id="t-rev">0</div><div class="l">今日の復習</div></div>
@@ -204,6 +211,7 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
     </div>
 
     <button class="btn" id="start-btn"><i class="ti ti-player-play-filled"></i> 学習を始める</button>
+    <div id="makeup-banner"></div>
     <div style="height:8px"></div>
   </section>
 
@@ -327,6 +335,18 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
     <div class="row gap">
       <button class="btn ghost sm" id="add-cancel">キャンセル</button>
       <button class="btn sm" id="add-save">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Makeup confirm modal -->
+<div class="modal" id="modal-makeup">
+  <div class="sheet">
+    <h3 id="mk-title">埋め合わせ学習</h3>
+    <div class="note" style="margin-bottom:16px" id="mk-desc"></div>
+    <div class="row gap">
+      <button class="btn ghost sm" id="mk-cancel">キャンセル</button>
+      <button class="btn sm" id="mk-start">学習を始める</button>
     </div>
   </div>
 </div>
@@ -1077,7 +1097,7 @@ function seedWords(){
   });
 }
 function defaultState(){
-  return {words:seedWords(),dailyLog:{},settings:{newPerDay:10,primary:"#7C3AED",primaryRgb:"124,58,237"},phoenixStreak:0};
+  return {words:seedWords(),dailyLog:{},settings:{newPerDay:10,primary:"#7C3AED",primaryRgb:"124,58,237"}};
 }
 function load(){
   const raw=loadRaw();
@@ -1088,7 +1108,6 @@ function load(){
     if(Array.isArray(o.words)&&o.words.length) state.words=o.words.map((w,i)=>({note:"",example:"",tips:"",idx:i,...w}));
     if(o.dailyLog) state.dailyLog=o.dailyLog;
     if(o.settings) state.settings={...state.settings,...o.settings};
-    if(typeof o.phoenixStreak==="number") state.phoenixStreak=o.phoenixStreak;
     const cc=COLORS.find(c=>c.c===state.settings.primary);
     if(cc) state.settings.primaryRgb=cc.rgb;
   }catch(e){ state=defaultState(); }
@@ -1127,33 +1146,21 @@ function maxStreakDays(){
   }
   return max;
 }
-/* 今日より前の連続日数を返す（今日のログは含まない） */
-function prevStreakDays(){
-  let s=0,d=new Date();
-  d.setDate(d.getDate()-1);
-  const has=dd=>{const l=state.dailyLog[dateKey(dd)];return l&&l.count>0;};
-  while(has(d)){s++;d.setDate(d.getDate()-1);}
-  return s;
-}
-/* フェニックス状態を更新（ページ表示時・学習完了後に呼ぶ） */
-function updatePhoenix(){
-  const s=streakDays();
-  if(s>0){
-    if(state.phoenixStreak!==0){ state.phoenixStreak=0; save(); }
-  } else if(state.phoenixStreak===0){
-    if(prevStreakDays()>=1){ state.phoenixStreak=1; save(); }
-  }
-}
-/* フェニックス期間中の連続日数（今日含む） */
-function phoenixDays(){
-  if(state.phoenixStreak<=0) return 0;
-  let s=0,d=new Date();
-  const has=dd=>{const l=state.dailyLog[dateKey(dd)];return l&&l.count>0;};
-  // 今日から連続で何日続いているか
-  while(has(d)){s++;d.setDate(d.getDate()-1);}
-  return s;
-}
 function todayLog(){const k=dateKey(new Date());return state.dailyLog[k]||{count:0,newCount:0,reviewCount:0};}
+
+/* ============ 埋め合わせ（キャッチアップ）機能 ============ */
+/* 直近何日以内の未学習日を埋め合わせ対象とするか */
+const MAKEUP_WINDOW_DAYS=7;
+/* 指定日が埋め合わせ対象か（過去日・ウィンドウ内・未学習・アプリ利用開始後） */
+function isMakeupEligible(key){
+  const today=dateKey(new Date());
+  if(key>=today) return false;
+  const log=state.dailyLog[key];
+  if(log&&log.count>0) return false;
+  const d=new Date(key+"T00:00:00");
+  const diffDays=Math.round((Date.now()-d.getTime())/DAY);
+  return diffDays>=1&&diffDays<=MAKEUP_WINDOW_DAYS;
+}
 
 /* ============ Theme ============ */
 function applyTheme(){
@@ -1183,36 +1190,14 @@ $$("#tabbar button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 function renderHome(){
   const now=new Date();
   $("#home-date").textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
-  updatePhoenix(); // ページ表示時にも起動判定
   const s=streakDays();
-  const pb=$("#phoenix-bar");
-  if(s>0){
-    // 通常の連続中
-    $("#streak-icon").textContent="🔥";
-    $("#streak-num").textContent=s;
-    $("#streak-lbl").textContent="日連続学習中";
-    pb.style.display="none";
-    state.phoenixStreak=0;
-  } else if(state.phoenixStreak>0){
-    // フェニックス期間中
-    const pDays=phoenixDays();
-    const PHOENIX_NEED=3;
-    $("#streak-icon").textContent="🪶";
-    $("#streak-num").textContent=pDays;
-    $("#streak-lbl").textContent=`日 — 復活まであと${Math.max(0,PHOENIX_NEED-pDays)}日！`;
-    pb.style.display="block";
-    const pct=Math.min(100,Math.round(pDays/PHOENIX_NEED*100));
-    pb.innerHTML=`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px"><span>🪶 フェニックス復活チャレンジ</span><span>${pDays}/${PHOENIX_NEED}日</span></div><div class="bar"><i style="width:${pct}%;background:linear-gradient(90deg,#a78bfa,#7c3aed)"></i></div>`;
-  } else {
-    // 0日・phoenix未起動
-    $("#streak-icon").textContent="🔥";
-    $("#streak-num").textContent=0;
-    $("#streak-lbl").textContent="日連続学習中";
-    pb.style.display="none";
-  }
+  $("#streak-icon").textContent="🔥";
+  $("#streak-num").textContent=s;
+  $("#streak-lbl").textContent="日連続学習中";
   const tl=todayLog();
   $("#t-new").textContent=tl.newCount;
   $("#t-rev").textContent=tl.reviewCount;
+  renderMakeupBanner();
 }
 function renderProgressBlocks(barSel,textSel,secSel){
   const total=state.words.length, mastered=masteredCount(), learning=learningCount();
@@ -1255,9 +1240,10 @@ $("#start-btn").onclick=()=>startSession();
 
 /* ============ Study session ============ */
 let session=null;
-function buildSession(){
+function buildSession(makeupDate){
   const now=Date.now();
-  const tl=todayLog();
+  // 埋め合わせ時はその日の記録が無い前提なので、通常の1日分の新規枠をフルに使う
+  const tl=makeupDate?{newCount:0}:todayLog();
   const quota=Math.max(0,state.settings.newPerDay-tl.newCount);
   const newWords=state.words.filter(w=>w.nextReview===0).sort((a,b)=>a.idx-b.idx).slice(0,quota);
   let reviewWords=state.words.filter(w=>w.nextReview>0&&w.nextReview<=now).sort((a,b)=>a.nextReview-b.nextReview);
@@ -1269,10 +1255,15 @@ function buildSession(){
   ]);
   return queue;
 }
-function startSession(){
-  const q=buildSession();
-  if(q.length===0){ session=null; go("study"); return; }
-  session={queue:q,i:0,correct:0,firstTotal:q.length,answered:false,reqId:0};
+function startSession(makeupDate){
+  const q=buildSession(makeupDate);
+  if(q.length===0){
+    session=null;
+    if(makeupDate) toast("学習できる単語がありません");
+    go("study");
+    return;
+  }
+  session={queue:q,i:0,correct:0,firstTotal:q.length,answered:false,reqId:0,makeupDate:makeupDate||null};
   go("study");
 }
 function renderStudyEntry(){
@@ -1729,6 +1720,7 @@ function renderQuestion(){
   const total=session.queue.length;
   const progress=Math.round(session.i/total*100);
   v.innerHTML=`
+    ${session.makeupDate?`<div class="note" style="margin-bottom:10px">🔁 ${fmtDateJa(session.makeupDate)}分の埋め合わせとして記録されます</div>`:""}
     <div class="sessbar">
       <div class="proglabel"><span>問題 ${session.i+1} / ${total}</span><span>${item.type==="new"?"新規":"復習"}・Lv.${w.level}</span></div>
       <div class="bar"><i style="width:${progress}%"></i></div>
@@ -1776,12 +1768,12 @@ function answer(choice,btn){
     const newLevel=correct?Math.min(4,w.level+1):Math.max(0,w.level-1);
     w.level=newLevel;
     w.nextReview=Date.now()+(INTERVAL[newLevel]||1)*DAY;
-    const k=dateKey(new Date());
+    const k=session.makeupDate||dateKey(new Date());
     const l=state.dailyLog[k]||{count:0,newCount:0,reviewCount:0};
     l.count++; if(item.type==="new") l.newCount++; else l.reviewCount++;
+    if(session.makeupDate) l.makeup=true;
     state.dailyLog[k]=l;
     if(correct) session.correct++;
-    updatePhoenix();
     save();
   }
   // 不正解はセッション末尾に再キュー（正解するまで繰り返し）
@@ -1829,12 +1821,14 @@ function showResult(){
   const total=session.firstTotal;
   const rate=total?Math.round(session.correct/total*100):0;
   const emoji=rate>=90?"🎉":rate>=70?"👍":"💪";
+  const makeupMsg=session.makeupDate?`<div class="rl" style="margin-top:-8px;margin-bottom:14px">🔁 ${fmtDateJa(session.makeupDate)}分として記録しました</div>`:"";
   const v=$("#v-study");
   v.innerHTML=`
     <div class="result">
       <div class="emoji">${emoji}</div>
       <div class="rate mono">${rate}%</div>
       <div class="rl">${total}問中 ${session.correct}問 正解（初回回答ベース）</div>
+      ${makeupMsg}
       <button class="btn" id="res-home"><i class="ti ti-home"></i> ホームに戻る</button>
       <div style="height:10px"></div>
       <button class="btn ghost" id="res-again"><i class="ti ti-refresh"></i> もう一度学習する</button>
@@ -1917,15 +1911,56 @@ function renderCalendar(){
     const log=state.dailyLog[key];
     const done=log&&log.count>0;
     const isToday=key===todayK;
+    const eligible=!done&&isMakeupEligible(key);
     let style="";
     if(done){
       const op=Math.min(1,0.3+log.count/40);
       style=`background:rgba(var(--primary-rgb),${op.toFixed(2)})`;
     }
-    html+=`<div class="cal-cell ${done?"done":""} ${isToday?"today":""}" style="${style}">
-      <div>${d}</div>${done?`<div class="cc">${log.count}</div>`:""}</div>`;
+    html+=`<div class="cal-cell ${done?"done":""} ${isToday?"today":""} ${eligible?"eligible":""}" style="${style}" ${eligible?`data-mk="${key}"`:""}>
+      <div>${d}</div>${done?`<div class="cc">${log.count}</div>`:""}${log&&log.makeup?`<div class="mk">🔁</div>`:""}</div>`;
   }
   $("#cal-grid").innerHTML=html;
+  $$("#cal-grid .cal-cell.eligible").forEach(el=>el.onclick=()=>openMakeupConfirm(el.dataset.mk));
+}
+
+/* ============ 埋め合わせフロー ============ */
+let pendingMakeupDate=null;
+function fmtDateJa(key){
+  const [y,m,d]=key.split("-").map(Number);
+  return `${m}月${d}日`;
+}
+function openMakeupConfirm(key){
+  pendingMakeupDate=key;
+  $("#mk-title").textContent=`${fmtDateJa(key)}分を埋め合わせる`;
+  $("#mk-desc").textContent="今からその分の単語を実際に学習します。完了すると、この日が学習済みとして記録されます（カレンダーには🔁マークが付きます）。";
+  $("#modal-makeup").classList.add("show");
+}
+$("#mk-cancel").onclick=()=>$("#modal-makeup").classList.remove("show");
+$("#modal-makeup").onclick=e=>{if(e.target.id==="modal-makeup")$("#modal-makeup").classList.remove("show");};
+$("#mk-start").onclick=()=>{
+  const key=pendingMakeupDate;
+  $("#modal-makeup").classList.remove("show");
+  if(key) startSession(key);
+};
+function renderMakeupBanner(){
+  const today=dateKey(new Date());
+  const keys=Object.keys(state.dailyLog);
+  const eligible=[];
+  for(let i=1;i<=MAKEUP_WINDOW_DAYS;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const key=dateKey(d);
+    if(isMakeupEligible(key)) eligible.push(key);
+  }
+  const el=$("#makeup-banner");
+  if(!eligible.length){ el.innerHTML=""; return; }
+  el.innerHTML=`<div class="makeup-card">
+    <div class="mh">🔁 埋め合わせできる日があります</div>
+    <div class="makeup-list">
+      ${eligible.map(k=>`<div class="makeup-row"><span>${fmtDateJa(k)}</span><button data-mk="${k}">埋め合わせる</button></div>`).join("")}
+    </div>
+  </div>`;
+  $$("#makeup-banner .makeup-row button").forEach(b=>b.onclick=()=>openMakeupConfirm(b.dataset.mk));
 }
 
 /* ============ Settings ============ */
@@ -1956,7 +1991,6 @@ $("#reset-btn").onclick=()=>{
   if(!confirm("学習記録（習熟度・ログ）をすべてリセットします。単語データは残ります。よろしいですか？")) return;
   state.words.forEach(w=>{w.level=0;w.nextReview=0;});
   state.dailyLog={};
-  state.phoenixStreak=0;
   save(); renderSettings(); toast("学習データをリセットしました");
 };
 
