@@ -306,6 +306,7 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
       <button class="btn danger sm" id="reset-btn"><i class="ti ti-trash"></i> 学習データをリセット</button>
       <div class="note" id="storage-note"></div>
     </div>
+    <div style="text-align:center;color:var(--muted);font-size:11px;margin-top:14px" id="app-version"></div>
     <div style="height:20px"></div>
   </section>
 
@@ -1061,6 +1062,7 @@ function saveRaw(v){
 
 const DAY=86400000;
 const INTERVAL={1:1,2:3,3:7,4:14};
+const APP_VERSION="1.1.0";
 const COLORS=[
   {n:"紫",c:"#7C3AED",rgb:"124,58,237"},
   {n:"青",c:"#2563EB",rgb:"37,99,235"},
@@ -1975,6 +1977,7 @@ function renderSettings(){
   $("#storage-note").textContent=lsOK
     ? "※ データはこのブラウザのlocalStorageに保存されます。キャッシュ削除で消えるため、定期的なエクスポートを推奨します。"
     : "⚠️ このプレビュー環境ではlocalStorageが使えず、記録は保持されません。HTMLファイルとして保存してブラウザで開くと正常に保存されます。";
+  $("#app-version").textContent=`TOEIC 単語帳 v${APP_VERSION}`;
 }
 $$("#seg-new button").forEach(b=>b.onclick=()=>{state.settings.newPerDay=+b.dataset.n;save();renderSettings();toast("新規単語数を変更しました");});
 $$("#seg-rev button").forEach(b=>b.onclick=()=>{state.settings.reviewCap=+b.dataset.n;save();renderSettings();toast("復習上限を変更しました");});
