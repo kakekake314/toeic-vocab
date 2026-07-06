@@ -1127,22 +1127,21 @@ function maxStreakDays(){
   }
   return max;
 }
-/* フェニックス状態を更新（学習完了後に呼ぶ） */
+/* 今日より前の連続日数を返す（今日のログは含まない） */
+function prevStreakDays(){
+  let s=0,d=new Date();
+  d.setDate(d.getDate()-1);
+  const has=dd=>{const l=state.dailyLog[dateKey(dd)];return l&&l.count>0;};
+  while(has(d)){s++;d.setDate(d.getDate()-1);}
+  return s;
+}
+/* フェニックス状態を更新（ページ表示時・学習完了後に呼ぶ） */
 function updatePhoenix(){
   const s=streakDays();
   if(s>0){
-    // 連続中ならphoenixをリセット
-    state.phoenixStreak=0;
-  } else {
-    // 昨日学習したか確認
-    const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
-    const yKey=dateKey(yesterday);
-    const dayBefore=new Date(); dayBefore.setDate(dayBefore.getDate()-2);
-    const dbKey=dateKey(dayBefore);
-    const hadStreak=state.dailyLog[yKey]&&state.dailyLog[yKey].count>0&&
-                    state.dailyLog[dbKey]&&state.dailyLog[dbKey].count>0;
-    // 途切れた直後のみphoenixを起動（既にphoenix中でなければ）
-    if(state.phoenixStreak===0 && hadStreak) state.phoenixStreak=1;
+    if(state.phoenixStreak!==0){ state.phoenixStreak=0; save(); }
+  } else if(state.phoenixStreak===0){
+    if(prevStreakDays()>=1){ state.phoenixStreak=1; save(); }
   }
 }
 /* フェニックス期間中の連続日数（今日含む） */
@@ -1184,6 +1183,7 @@ $$("#tabbar button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 function renderHome(){
   const now=new Date();
   $("#home-date").textContent=`${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日`;
+  updatePhoenix(); // ページ表示時にも起動判定
   const s=streakDays();
   const pb=$("#phoenix-bar");
   if(s>0){
