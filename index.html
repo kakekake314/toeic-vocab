@@ -102,6 +102,9 @@ h1.title{font-size:22px;font-weight:700;margin-bottom:2px}
 .tips .ans{font-family:'Space Mono',monospace;font-weight:700;color:var(--text)}
 .feedback-panel{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--bg);border-top:1px solid var(--line);padding:14px 20px 10px;z-index:50;display:none}
 .feedback-panel.show{display:block}
+.next-btn-wrap{position:relative;overflow:hidden;border-radius:14px;background:var(--primary)}
+.next-btn-wrap .next-progress{position:absolute;inset:0;width:100%;background:rgba(255,255,255,.28);transform-origin:left center;z-index:0;pointer-events:none}
+.next-btn-wrap .btn{position:relative;z-index:1;background:transparent}
 
 .result{text-align:center;padding:30px 10px}
 .result .emoji{font-size:64px}
@@ -1179,7 +1182,7 @@ function go(v){
   $$("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   $("#fab").style.display=(v==="words")?"block":"none";
   window.scrollTo(0,0);
-  if(v!=="study"){ const p=$("#feedback-panel"); if(p) p.className="feedback-panel"; }
+  if(v!=="study"){ const p=$("#feedback-panel"); if(p) p.className="feedback-panel"; clearQuestionTimers(); }
   if(v==="home") renderHome();
   if(v==="words") renderWords();
   if(v==="progress") renderProgress();
@@ -1750,12 +1753,39 @@ function renderQuestion(){
   }
   panel.className="feedback-panel";
   panel.innerHTML="";
-  $("#hint-btn").onclick=()=>{$("#hintbox").textContent=w.word[0].toUpperCase()+" "+"· ".repeat(Math.max(0,w.word.length-1)).trim();};
-  $("#show-btn").onclick=showChoices;
+  $("#hint-btn").onclick=()=>{clearTimeout(session.hintTimer);revealHint();};
+  $("#show-btn").onclick=()=>{clearTimeout(session.choiceTimer);showChoices();};
+  scheduleAutoTimers();
+}
+/* ---- ヒント／選択肢の自動表示タイマー ---- */
+const AUTO_HINT_MS=3000, AUTO_CHOICES_MS=6000;
+function revealHint(){
+  if(!session) return;
+  const hb=$("#hintbox");
+  if(!hb) return;
+  const item=session.queue[session.i]; const w=item.w;
+  hb.textContent=w.word[0].toUpperCase()+" "+"· ".repeat(Math.max(0,w.word.length-1)).trim();
+}
+function scheduleAutoTimers(){
+  if(!session) return;
+  clearTimeout(session.hintTimer);
+  clearTimeout(session.choiceTimer);
+  session.hintTimer=setTimeout(()=>{
+    if(session&&!session.answered) revealHint();
+  },AUTO_HINT_MS);
+  session.choiceTimer=setTimeout(()=>{
+    if(session&&!session.answered) showChoices();
+  },AUTO_CHOICES_MS);
+}
+function clearQuestionTimers(){
+  if(!session) return;
+  clearTimeout(session.hintTimer);
+  clearTimeout(session.choiceTimer);
+  clearTimeout(session.nextTimer);
 }
 function showChoices(){
   const box=$("#choices");
-  if(box.style.display!=="none") return;
+  if(!box||box.style.display!=="none") return;
   box.style.display="flex";
   box.innerHTML=session.choices.map(c=>`<button class="choice" data-c="${esc(c)}">${esc(c)}</button>`).join("");
   $$("#choices .choice").forEach(btn=>btn.onclick=()=>answer(btn.dataset.c,btn));
@@ -1763,6 +1793,7 @@ function showChoices(){
 function answer(choice,btn){
   if(session.answered) return;
   session.answered=true;
+  clearQuestionTimers();
   const item=session.queue[session.i];
   const w=item.w;
   const correct=choice===w.word;
@@ -1806,14 +1837,38 @@ function answer(choice,btn){
       <div class="th"><i class="ti ti-sparkles"></i> 答え：<span class="ans">${esc(w.word)}</span> ＝ ${esc(w.meaning)}</div>
       ${esc(tip)}
     </div>
-    <button class="btn" id="next-btn">${session.i+1>=session.queue.length?"結果を見る":"次の問題"} <i class="ti ti-arrow-right"></i></button>
+    <div class="next-btn-wrap"><span class="next-progress" id="next-progress"></span><button class="btn" id="next-btn">${session.i+1>=session.queue.length?"結果を見る":"次の問題"} <i class="ti ti-arrow-right"></i></button></div>
   `;
   fb.className="feedback-panel show";
   const spacer=$("#feedback-spacer");
   if(spacer) spacer.style.display="block";
   $("#next-btn").onclick=next;
+  scheduleAutoNext();
+}
+/* ---- 回答後の自動遷移（プログレス演出つき） ---- */
+const AUTO_NEXT_MS=5000;
+function scheduleAutoNext(){
+  if(!session) return;
+  clearTimeout(session.nextTimer);
+  const prog=$("#next-progress");
+  if(prog){
+    prog.style.transition="none";
+    prog.style.width="100%";
+    // 強制リフローしてから幅を0にし、5秒かけて縮小させる（残り時間を視覚化）
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        prog.style.transition=`width ${AUTO_NEXT_MS}ms linear`;
+        prog.style.width="0%";
+      });
+    });
+  }
+  session.nextTimer=setTimeout(()=>{
+    if(session) next();
+  },AUTO_NEXT_MS);
 }
 function next(){
+  if(!session) return;
+  clearTimeout(session.nextTimer);
   const panel=$("#feedback-panel");
   if(panel) panel.className="feedback-panel";
   const spacer=$("#feedback-spacer");
@@ -1829,6 +1884,7 @@ function showResult(){
   const makeupMsg=session.makeupDate?`<div class="rl" style="margin-top:-8px;margin-bottom:14px">🔁 ${fmtDateJa(session.makeupDate)}分として記録しました</div>`:"";
   const testMsg=session.isTest?`<div class="rl" style="margin-top:-8px;margin-bottom:14px">🎯 習得済み単語テスト（記録には反映されていません）</div>`:"";
   const v=$("#v-study");
+  clearQuestionTimers();
   v.innerHTML=`
     <div class="result">
       <div class="emoji">${emoji}</div>
