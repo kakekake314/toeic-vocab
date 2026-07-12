@@ -1723,8 +1723,9 @@ function renderQuestion(){
   const progress=Math.round(session.i/total*100);
   v.innerHTML=`
     ${session.makeupDate?`<div class="note" style="margin-bottom:10px">🔁 ${fmtDateJa(session.makeupDate)}分の埋め合わせとして記録されます</div>`:""}
+    ${session.isTest?`<div class="note" style="margin-bottom:10px">🎯 習得済み単語テスト（この結果は復習スケジュールに影響しません）</div>`:""}
     <div class="sessbar">
-      <div class="proglabel"><span>問題 ${session.i+1} / ${total}</span><span>${item.type==="new"?"新規":"復習"}・Lv.${w.level}</span></div>
+      <div class="proglabel"><span>問題 ${session.i+1} / ${total}</span><span>${session.isTest?"テスト":(item.type==="new"?"新規":"復習")}${session.isTest?"":"・Lv."+w.level}</span></div>
       <div class="bar"><i style="width:${progress}%"></i></div>
     </div>
     <div class="qcard ${item.type==="review"?"lv"+w.level:""}">
@@ -1765,8 +1766,8 @@ function answer(choice,btn){
   const item=session.queue[session.i];
   const w=item.w;
   const correct=choice===w.word;
-  // 初回回答のみレベル・ログを更新（再挑戦は練習扱い）
-  if(!item.retry){
+  // 初回回答のみレベル・ログを更新（再挑戦は練習扱い）。テストモードはSRS・ログに一切影響させない
+  if(!item.retry && !session.isTest){
     const newLevel=correct?Math.min(4,w.level+1):Math.max(0,w.level-1);
     w.level=newLevel;
     w.nextReview=Date.now()+(INTERVAL[newLevel]||1)*DAY;
@@ -1777,6 +1778,8 @@ function answer(choice,btn){
     state.dailyLog[k]=l;
     if(correct) session.correct++;
     save();
+  } else if(session.isTest && !item.retry){
+    if(correct) session.correct++;
   }
   // 不正解はセッション末尾に再キュー（正解するまで繰り返し）
   if(!correct){
@@ -1824,13 +1827,14 @@ function showResult(){
   const rate=total?Math.round(session.correct/total*100):0;
   const emoji=rate>=90?"🎉":rate>=70?"👍":"💪";
   const makeupMsg=session.makeupDate?`<div class="rl" style="margin-top:-8px;margin-bottom:14px">🔁 ${fmtDateJa(session.makeupDate)}分として記録しました</div>`:"";
+  const testMsg=session.isTest?`<div class="rl" style="margin-top:-8px;margin-bottom:14px">🎯 習得済み単語テスト（記録には反映されていません）</div>`:"";
   const v=$("#v-study");
   v.innerHTML=`
     <div class="result">
       <div class="emoji">${emoji}</div>
       <div class="rate mono">${rate}%</div>
       <div class="rl">${total}問中 ${session.correct}問 正解（初回回答ベース）</div>
-      ${makeupMsg}
+      ${makeupMsg}${testMsg}
       <button class="btn" id="res-home"><i class="ti ti-home"></i> ホームに戻る</button>
       <div style="height:10px"></div>
       <button class="btn ghost" id="res-again"><i class="ti ti-refresh"></i> もう一度学習する</button>
@@ -1858,8 +1862,14 @@ function renderWords(){
     return true;
   });
   const lvName=l=>l>=4?["習得済み","lv4"]:l>=1?["学習中 Lv."+l,"lv"+l]:["未学習","lv0"];
-  if(!list.length){$("#wlist").innerHTML=`<div class="empty"><i class="ti ti-search-off"></i>該当する単語がありません</div>`;return;}
-  $("#wlist").innerHTML=list.slice(0,400).map(w=>{
+  const testBtnHtml=(wfilter==="mastered"&&masteredCount()>0)
+    ?`<button class="btn sm" id="test-mastered-btn" style="margin-bottom:12px"><i class="ti ti-target-arrow"></i> 習得済み単語をテストする（${masteredCount()} 語中）</button>`
+    :"";
+  if(!list.length){$("#wlist").innerHTML=`${testBtnHtml}<div class="empty"><i class="ti ti-search-off"></i>該当する単語がありません</div>`;
+    if($("#test-mastered-btn")) $("#test-mastered-btn").onclick=openTestSetup;
+    return;
+  }
+  $("#wlist").innerHTML=testBtnHtml+list.slice(0,400).map(w=>{
     const [ln,lc]=lvName(w.level);
     return `<div class="witem">
       <div class="wt"><div class="we">${esc(w.word)}</div><div class="wm">${esc(w.meaning)}${w.note?" ・ "+esc(w.note):""}</div></div>
@@ -1868,6 +1878,7 @@ function renderWords(){
     </div>`;
   }).join("")+(list.length>400?`<div class="countnote">先頭400件を表示中（検索で絞り込めます）</div>`:"");
   $$("#wlist .wdel").forEach(b=>b.onclick=()=>delWord(b.dataset.w));
+  if($("#test-mastered-btn")) $("#test-mastered-btn").onclick=openTestSetup;
 }
 function delWord(word){
   if(!confirm(`「${word}」を削除しますか？`)) return;
@@ -1887,6 +1898,46 @@ $("#add-save").onclick=()=>{
   state.words.push({word,meaning:mean,note,level:0,nextReview:0,idx:state.words.length,example:"",tips:""});
   save(); $("#modal-add").classList.remove("show"); renderWords(); toast("追加しました");
 };
+
+/* ============ 習得済み単語テストモード ============ */
+function openTestSetup(){
+  const max=masteredCount();
+  if(max===0){toast("習得済みの単語がまだありません");return;}
+  const presets=[10,20,30,50].filter(n=>n<max);
+  const optHtml=presets.map(n=>`<button data-n="${n}">${n}</button>`).join("")+`<button data-n="${max}">すべて(${max})</button>`;
+  $("#mk-title").textContent="習得済み単語テスト";
+  $("#mk-desc").innerHTML=`
+    <div style="margin-bottom:10px">出題数を選んでください（このテストの結果は復習スケジュールに影響しません）。</div>
+    <div class="seg" id="test-n-seg" style="flex-wrap:wrap">${optHtml}</div>
+  `;
+  $("#mk-start").textContent="テスト開始";
+  let chosenN=presets[0]||max;
+  $("#modal-makeup").classList.add("show");
+  $$("#test-n-seg button").forEach(b=>{
+    if(+b.dataset.n===chosenN) b.classList.add("on");
+    b.onclick=()=>{$$("#test-n-seg button").forEach(x=>x.classList.remove("on"));b.classList.add("on");chosenN=+b.dataset.n;};
+  });
+  $$("#test-n-seg button")[0]?.classList.add("on");
+  // mk-start の挙動をテスト用に一時的に差し替え
+  const startBtn=$("#mk-start");
+  const newBtn=startBtn.cloneNode(true);
+  startBtn.parentNode.replaceChild(newBtn,startBtn);
+  newBtn.onclick=()=>{
+    $("#modal-makeup").classList.remove("show");
+    startTestSession(chosenN);
+  };
+  const cancelBtn=$("#mk-cancel");
+  const newCancel=cancelBtn.cloneNode(true);
+  cancelBtn.parentNode.replaceChild(newCancel,cancelBtn);
+  newCancel.onclick=()=>$("#modal-makeup").classList.remove("show");
+}
+function startTestSession(n){
+  const pool=shuffle(state.words.filter(w=>w.level>=4)).slice(0,n);
+  if(!pool.length){toast("出題できる単語がありません");return;}
+  const queue=shuffle(pool.map(w=>({w,type:"test"})));
+  session={queue,i:0,correct:0,firstTotal:queue.length,answered:false,reqId:0,makeupDate:null,isTest:true};
+  go("study");
+}
 
 /* ============ Progress ============ */
 let calMonth=new Date();
@@ -1936,15 +1987,22 @@ function openMakeupConfirm(key){
   pendingMakeupDate=key;
   $("#mk-title").textContent=`${fmtDateJa(key)}分を埋め合わせる`;
   $("#mk-desc").textContent="今からその分の単語を実際に学習します。完了すると、この日が学習済みとして記録されます（カレンダーには🔁マークが付きます）。";
+  $("#mk-start").textContent="学習を始める";
   $("#modal-makeup").classList.add("show");
+  const startBtn=$("#mk-start");
+  const newBtn=startBtn.cloneNode(true);
+  startBtn.parentNode.replaceChild(newBtn,startBtn);
+  newBtn.onclick=()=>{
+    const key=pendingMakeupDate;
+    $("#modal-makeup").classList.remove("show");
+    if(key) startSession(key);
+  };
+  const cancelBtn=$("#mk-cancel");
+  const newCancel=cancelBtn.cloneNode(true);
+  cancelBtn.parentNode.replaceChild(newCancel,cancelBtn);
+  newCancel.onclick=()=>$("#modal-makeup").classList.remove("show");
 }
-$("#mk-cancel").onclick=()=>$("#modal-makeup").classList.remove("show");
 $("#modal-makeup").onclick=e=>{if(e.target.id==="modal-makeup")$("#modal-makeup").classList.remove("show");};
-$("#mk-start").onclick=()=>{
-  const key=pendingMakeupDate;
-  $("#modal-makeup").classList.remove("show");
-  if(key) startSession(key);
-};
 function renderMakeupBanner(){
   const today=dateKey(new Date());
   const keys=Object.keys(state.dailyLog);
