@@ -1764,7 +1764,7 @@ function revealHint(){
   const hb=$("#hintbox");
   if(!hb) return;
   const item=session.queue[session.i]; const w=item.w;
-  hb.textContent=w.word[0].toUpperCase()+" "+"· ".repeat(Math.max(0,w.word.length-1)).trim();
+  hb.textContent=w.word[0].toUpperCase()+" "+"·····";
 }
 function scheduleAutoTimers(){
   if(!session) return;
