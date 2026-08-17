@@ -1189,7 +1189,14 @@ function go(v){
   if(v==="settings") renderSettings();
   if(v==="study"){ if(session) renderQuestion(); else renderStudyEntry(); }
 }
-$$("#tabbar button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+$$("#tabbar button").forEach(b=>b.onclick=()=>{
+  const target=b.dataset.v;
+  // 学習セッション中に他タブへ誤って移動するのを防ぐ（結果画面ではsessionはnullなので対象外）
+  if(session && current==="study" && target!=="study"){
+    if(!confirm("学習中です。他の画面に移動しますか？（進行状況はそのまま保持されます）")) return;
+  }
+  go(target);
+});
 
 /* ============ Home ============ */
 function renderHome(){
