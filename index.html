@@ -1304,10 +1304,7 @@ function maskedExample(item){
   if(w.example){
     return w.example.replace(new RegExp(escReg(w.word),"gi"),'<span class="blank">?????</span>');
   }
-  const prompts=["この意味の単語は？ → <span class='blank'>?????</span>",
-                 "正しい単語を選びましょう → <span class='blank'>?????</span>",
-                 "下の意味に合う語は → <span class='blank'>?????</span>"];
-  return prompts[w.idx%prompts.length];
+  return "";
 }
 /* ---- 語源ヒント辞書（主要語） ---- */
 const ETYM={
@@ -2000,7 +1997,7 @@ function renderQuestion(){
     </div>
     <div class="qcard ${item.type==="review"?"lv"+w.level:""}">
       <div class="qmean">${esc(w.meaning)}</div>
-      <div class="qex" id="qex">${maskedExample(item)}</div>
+      ${w.example?`<div class="qex" id="qex">${maskedExample(item)}</div>`:'<div class="qex" id="qex" style="display:none"></div>'}
       <div class="hintbox" id="hintbox"></div>
     </div>
     <div class="qbtns">
